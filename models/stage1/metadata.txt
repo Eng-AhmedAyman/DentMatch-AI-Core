@@ -1,0 +1,29 @@
+============================================================
+MODEL METADATA
+============================================================
+Project Name    : Healthy Smile (Stage 1: Dental Screening)
+Model File      : final_dental_stage1_model.keras
+Model Version   : 1.0 (Stable)
+Created Date    : March 01, 2026
+
+TECHNICAL SPECIFICATIONS:
+- Architecture  : MobileNetV2 (Transfer Learning)
+- Framework     : TensorFlow / Keras
+- Input Size    : 224x224 RGB
+- Threshold     : 0.95 (Adaptive Acceptance)
+
+PERFORMANCE METRICS (Validation Set):
+- Overall Accuracy : 98%
+- Precision (Teeth) : 1.00
+- Recall (Teeth)    : 0.97
+- F1-Score (Teeth)  : 0.99
+
+TRAINING DETAILS:
+- Dataset Size  : 4677 images (Balanced)
+- Training Type : Supervised Learning (Class-weighted)
+- Preprocessing : CLAHE (Contrast Enhancement)
+
+NOTES:
+This model acts as a security and quality guardrail to filter
+out non-dental images before they reach the diagnostic module.
+============================================================

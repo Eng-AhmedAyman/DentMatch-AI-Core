@@ -1,0 +1,23 @@
+============================================================
+MODEL METADATA
+============================================================
+Project Name    : Healthy Smile (Stage 2: Health Assessment)
+Model Source    : Hugging Face (steven123/Check_GoodBad_Teeth)
+Model Version   : 1.0 (Offline Pipeline)
+Downloaded Date : March 2026
+
+TECHNICAL SPECIFICATIONS:
+- Architecture  : ViT (Vision Transformer)
+- Framework     : PyTorch / Hugging Face Transformers
+- Input Format  : PIL Image (RGB)
+- Task          : Binary Image Classification
+
+CLASSES:
+- Good Teeth (Healthy)
+- Bad Teeth (Requires Attention)
+
+NOTES:
+This model acts as the "Triage Doctor". It uses a highly advanced 
+Transformer architecture to quickly assess whether the validated 
+dental image shows signs of disease, routing it to Stage 3 if necessary.
+============================================================

@@ -1,0 +1,35 @@
+============================================================
+MODEL METADATA
+============================================================
+Project Name    : Healthy Smile (Stage 3: Specialist Diagnosis)
+Model File      : stage3_efficientnet_finetuned_best.keras
+Model Version   : 2.0 (Fine-Tuned)
+Created Date    : March 2026
+
+TECHNICAL SPECIFICATIONS:
+- Architecture  : EfficientNetB4 (Transfer Learning + Fine-Tuning)
+- Framework     : TensorFlow / Keras
+- Input Size    : 224x224 RGB (Internal Rescaling)
+- Output Layer  : Softmax (6 Classes)
+- Safety Threshold: 80.0% Confidence Check
+
+PERFORMANCE METRICS (Clinical Validation):
+- ROC-AUC Range : 0.972 (Calculus) to 1.000 (Mouth Ulcer)
+- Safe AI Eval  : High confidence clustering for correct diagnoses.
+
+DISEASE CLASSES:
+0. Calculus
+1. Dental_Caries
+2. Gingivitis
+3. Hypodontia
+4. Mouth_Ulcer
+5. Tooth_Discoloration
+
+TRAINING DETAILS:
+- Strategy      : 2-Phase Training (Warm-up -> Unfrozen Layers)
+- Optimization  : Class-weight balancing for minority classes.
+
+NOTES:
+This is the core diagnostic engine. It extracts deep clinical features 
+(verified via t-SNE) to classify specific dental conditions with high precision.
+============================================================
