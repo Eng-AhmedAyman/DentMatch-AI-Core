@@ -1,0 +1,24 @@
+{
+    "model_name": "DentMatch_EfficientNetB4",
+    "version": "1.0.0",
+    "image_size": [
+        224,
+        224
+    ],
+    "num_classes": 5,
+    "class_names": [
+        "Dental_Caries",
+        "Hypodontia",
+        "Mouth_Ulcer",
+        "Periodontal_Disease",
+        "Tooth_Discoloration"
+    ],
+    "phase1_epochs": 20,
+    "phase1_lr": 0.001,
+    "phase2_epochs": 30,
+    "phase2_lr": 1e-05,
+    "dropout_rate": 0.4,
+    "label_smoothing": 0.1,
+    "loss_phase2": "focal_loss(gamma=2.0, alpha=0.25)",
+    "final_val_acc": 0.9594155550003052
+}
