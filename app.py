@@ -509,7 +509,7 @@ setInterval(fixBtn, 400);
 # ==============================================================================
 # ZONE 4: CONSTANTS
 # ==============================================================================
-API_BASE_URL: str = "http://127.0.0.1:8000"
+API_BASE_URL: str = "https://eng-ahmedayman10-healthysmile-ai.hf.space"
 ANALYZE_ENDPOINT: str = f"{API_BASE_URL}/analyze/"
 TRIAGE_ENDPOINT: str = f"{API_BASE_URL}/triage-symptoms/"
 
@@ -1533,7 +1533,7 @@ margin-bottom: 24px;
         unsafe_allow_html=True,
     )
     col_code1.code(
-        'curl -X POST "http://127.0.0.1:8000/analyze/" \\\n'
+        'curl -X POST "https://eng-ahmedayman10-healthysmile-ai.hf.space/analyze/" \\\n'
         '     -H "accept: application/json" \\\n'
         '     -F "file=@patient_tooth.jpg" \\\n'
         '     -F "pain_duration=أسبوع إلى شهر" \\\n'
@@ -1546,7 +1546,7 @@ margin-bottom: 24px;
     )
     col_code2.code(
         "import requests\n\n"
-        'url   = "http://127.0.0.1:8000/analyze/"\n'
+        'url   = "https://eng-ahmedayman10-healthysmile-ai.hf.space/analyze/"\n'
         'files = {"file": open("patient_tooth.jpg", "rb")}\n'
         "data  = {\n"
         '    "pain_duration":    "أسبوع إلى شهر",\n'
@@ -1591,7 +1591,7 @@ Send an Arabic symptom description to receive AI triage routing to the correct c
         unsafe_allow_html=True,
     )
     col_t1.code(
-        'curl -X POST "http://127.0.0.1:8000/triage-symptoms/" \\\n'
+        'curl -X POST "https://eng-ahmedayman10-healthysmile-ai.hf.space/triage-symptoms/" \\\n'
         '     -H "Content-Type: application/json" \\\n'
         '     -d \'{"symptoms_description": "عندي ألم شديد في ضرسي بقاله أسبوع"}\'',
         language="bash",
@@ -1602,7 +1602,7 @@ Send an Arabic symptom description to receive AI triage routing to the correct c
     )
     col_t2.code(
         "import requests\n\n"
-        'url     = "http://127.0.0.1:8000/triage-symptoms/"\n'
+        'url     = "https://eng-ahmedayman10-healthysmile-ai.hf.space/triage-symptoms/"\n'
         'payload = {"symptoms_description": "عندي ألم شديد في ضرسي بقاله أسبوع"}\n\n'
         "response = requests.post(url, json=payload)\n"
         "print(response.json())",
