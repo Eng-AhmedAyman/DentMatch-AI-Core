@@ -52,7 +52,26 @@ import os
 import json
 import time
 from datetime import datetime
+import keras
+import keras.src.saving.serialization_lib as serialization_lib
 
+original_deserialize = serialization_lib.deserialize_keras_object
+
+
+def safe_deserialize(*args, **kwargs):
+    try:
+        return original_deserialize(*args, **kwargs)
+    except TypeError as e:
+        if "quantization_config" in str(e):
+            if len(args) > 0 and "config" in args[0]:
+                args[0]["config"].pop("quantization_config", None)
+            elif "config" in kwargs:
+                kwargs["config"].pop("quantization_config", None)
+            return original_deserialize(*args, **kwargs)
+        raise e
+
+
+serialization_lib.deserialize_keras_object = safe_deserialize
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -383,7 +402,6 @@ async def analyze_dental_image(
         description=("Patient-reported chronic conditions (e.g. 'مرض السكري')."),
     ),
     include_internal: bool = Form(default=False),
-
 ) -> JSONResponse:
     """
     Image-based dental diagnosis via the 3-stage CNN pipeline.
