@@ -16,3 +16,4 @@ requests==2.31.0
 google-genai
 python-dotenv==1.0.1
 huggingface_hub==0.22.2
+torch

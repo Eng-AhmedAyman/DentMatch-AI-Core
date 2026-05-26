@@ -64,7 +64,6 @@ VERSION: 2.1.0  (audit fix — out-of-scope guard, Healthy disease_probabilities
 # ZONE 1: IMPORTS
 # ==============================================================================
 import io
-import os
 import json
 import time
 import datetime
@@ -76,6 +75,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image as keras_image
 from PIL import Image
+import os
+
+os.environ["KERAS_BACKEND"] = "tensorflow"
 
 # Suppress TF / Transformers verbosity in production
 warnings.filterwarnings("ignore")
@@ -210,7 +212,9 @@ class DentalAI_System:
             print("⏳ Loading Stage 2 (Triage Doctor — Offline)...")
             from transformers import pipeline as hf_pipeline
 
-            self.stage2_triage = hf_pipeline("image-classification", model=STAGE2_PATH)
+            self.stage2_triage = hf_pipeline(
+                "image-classification", model=STAGE2_PATH, from_pt=True
+            )
             print("   ✅ [STAGE 2 READY]")
 
             # ---- Stage 3: EfficientNetB4 Specialist ----
