@@ -2,11 +2,25 @@
 ==============================================================================
 FILE: stage1_train.py
 DESCRIPTION:
-Training pipeline for Stage 1 (Security Guard / Binary Classification).
-This script trains a MobileNetV2 model to distinguish between valid dental
-images ('teeth') and invalid/irrelevant images ('not').
-It applies robust data augmentation and saves the best model directly to
-the 'models' directory for production use.
+    Training pipeline for Stage 1 — Security Guard (Binary Classification).
+    Trains a MobileNetV2 model to distinguish between valid dental images
+    ('Teeth') and invalid/irrelevant images ('Not_Teeth').
+
+    Applies robust data augmentation and saves the best model to:
+        models/stage1/stage1_mobilenet.keras
+
+    This path MUST match STAGE1_PATH in deployment/master_pipeline.py.
+
+DATASET STRUCTURE EXPECTED:
+    data/stage1_binary/train/
+    ├── Teeth/        (dental images)
+    └── Not_Teeth/    (non-dental / face images)
+
+USAGE:
+    python src/stage1_train.py
+
+AUTHOR:  Eng. Ahmed Ayman — AI & Data Science Engineer
+VERSION: 1.1.0  (fix — model save path aligned with master_pipeline.STAGE1_PATH)
 ==============================================================================
 """
 
@@ -18,30 +32,34 @@ from tensorflow.keras import layers, models, callbacks
 # ==============================================================================
 # 1. DYNAMIC PATH RESOLUTION
 # ==============================================================================
-# Automatically locate the project root (HealthySmile_AI_Core)
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
-# Dynamically point to the Training Data and Models folders
 DATASET_DIR = os.path.join(PROJECT_ROOT, "data", "stage1_binary", "train")
-MODEL_SAVE_DIR = os.path.join(PROJECT_ROOT, "models")
-os.makedirs(MODEL_SAVE_DIR, exist_ok=True)  # Ensure the models folder exists
 
-# The exact path where the model will be saved
+# ⚠️  This path MUST match STAGE1_PATH in deployment/master_pipeline.py
+MODEL_SAVE_DIR = os.path.join(PROJECT_ROOT, "models", "stage1")
 MODEL_SAVE_PATH = os.path.join(MODEL_SAVE_DIR, "stage1_mobilenet.keras")
 
+os.makedirs(MODEL_SAVE_DIR, exist_ok=True)
+
+print("=" * 60)
+print("🦷  DentMatch AI — Stage 1 Training  v1.1.0")
+print("=" * 60)
+print(f"   Dataset  : {DATASET_DIR}")
+print(f"   Output   : {MODEL_SAVE_PATH}")
+print("=" * 60 + "\n")
+
 # ==============================================================================
-# 2. CONFIGURATION & PARAMETERS
+# 2. CONFIGURATION
 # ==============================================================================
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 16
 EPOCHS = 15
 
 # ==============================================================================
-# 3. DATA PIPELINE (IMAGE AUGMENTATION)
+# 3. DATA PIPELINE
 # ==============================================================================
-# We define an ImageDataGenerator to rescale pixels and add random transformations.
-# This makes the model 'tough' and able to recognize teeth from any angle.
 datagen = tf.keras.preprocessing.image.ImageDataGenerator(
     rescale=1.0 / 255,
     rotation_range=30,
@@ -52,7 +70,7 @@ datagen = tf.keras.preprocessing.image.ImageDataGenerator(
     validation_split=0.2,
 )
 
-print(f"⏳ [INFO] Loading training data from:\n   -> {DATASET_DIR}")
+print(f"⏳ Loading training data from:\n   {DATASET_DIR}\n")
 
 train_gen = datagen.flow_from_directory(
     DATASET_DIR,
@@ -73,42 +91,66 @@ val_gen = datagen.flow_from_directory(
 # ==============================================================================
 # 4. MODEL ARCHITECTURE (TRANSFER LEARNING)
 # ==============================================================================
-# Using MobileNetV2 as a base feature extractor.
-# It provides high accuracy with low computational cost (perfect for fast inference).
-print("🧠 [INFO] Initializing MobileNetV2 architecture...")
+print("🧠 Initialising MobileNetV2 architecture...")
 base_model = MobileNetV2(
-    weights="imagenet", include_top=False, input_shape=(224, 224, 3)
+    weights="imagenet",
+    include_top=False,
+    input_shape=(224, 224, 3),
 )
-base_model.trainable = False  # Freeze pre-trained weights
+base_model.trainable = False  # Freeze pretrained weights
 
 model = models.Sequential(
     [
         base_model,
         layers.GlobalAveragePooling2D(),
         layers.Dense(128, activation="relu"),
-        layers.Dropout(0.4),  # Dropout layer to prevent overfitting
+        layers.Dropout(0.4),
         layers.Dense(1, activation="sigmoid"),  # Binary classification
     ]
 )
 
-model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+model.compile(
+    optimizer="adam",
+    loss="binary_crossentropy",
+    metrics=["accuracy"],
+)
+
+model.summary()
 
 # ==============================================================================
-# 5. TRAINING PROCESS
+# 5. CALLBACKS
 # ==============================================================================
-# Callbacks for better model convergence:
-# EarlyStopping: halts training if no improvement.
-# ModelCheckpoint: saves the best performing version of the model directly to /models.
 my_callbacks = [
-    callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True),
-    callbacks.ModelCheckpoint(MODEL_SAVE_PATH, save_best_only=True, monitor="val_loss"),
+    callbacks.EarlyStopping(
+        monitor="val_loss",
+        patience=3,
+        restore_best_weights=True,
+        verbose=1,
+    ),
+    callbacks.ModelCheckpoint(
+        filepath=MODEL_SAVE_PATH,
+        save_best_only=True,
+        monitor="val_loss",
+        verbose=1,
+    ),
+    callbacks.ReduceLROnPlateau(
+        monitor="val_loss",
+        factor=0.3,
+        patience=2,
+        min_lr=1e-7,
+        verbose=1,
+    ),
 ]
 
-print("🚀 [INFO] Starting training. Please monitor the loss/accuracy metrics...")
+# ==============================================================================
+# 6. TRAINING
+# ==============================================================================
+print("\n🚀 Starting training...\n")
 history = model.fit(
-    train_gen, validation_data=val_gen, epochs=EPOCHS, callbacks=my_callbacks
+    train_gen,
+    validation_data=val_gen,
+    epochs=EPOCHS,
+    callbacks=my_callbacks,
 )
 
-print(
-    f"\n✅ [SUCCESS] Training completed. Best model securely saved at:\n   -> {MODEL_SAVE_PATH}"
-)
+print(f"\n✅ Training complete. Best model saved at:\n   {MODEL_SAVE_PATH}\n")

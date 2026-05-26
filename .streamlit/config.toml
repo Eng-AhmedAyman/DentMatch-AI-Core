@@ -1,0 +1,22 @@
+[server]
+maxUploadSize = 5
+headless = true
+port = 7860
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false
+
+
+models/
+│   ├── stage1 
+            test--> not جواه صور,teeth جواه صور
+            train--> not جواه صور,teeth جواه صور
+            Num_Of_Photos_Of_Each_Category.txt
+│   ├── stage2
+            test--->Tooth_Discolorationجواه صور Periodontal_Diseaseجواه صور Mouth_Ulcerجواه صور Hypodontiaجواه صور Dental_Cariesجواه صور
+            train--->Tooth_Discolorationجواه صور Periodontal_Diseaseجواه صور Mouth_Ulcerجواه صور Hypodontiaجواه صور Dental_Cariesجواه صور
+            value-->Tooth_Discoloration Periodontal_Disease Mouth_Ulcer Hypodontia Dental_Caries
+            Num_Of_Photos_Of_Each_Category.txt
+│   └── stage3 

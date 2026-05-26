@@ -2,7 +2,7 @@
 MODEL METADATA
 ============================================================
 Project Name    : Healthy Smile (Stage 1: Dental Screening)
-Model File      : final_dental_stage1_model.keras
+Model File      : stage1_mobilenet.keras
 Model Version   : 1.0 (Stable)
 Created Date    : March 01, 2026
 

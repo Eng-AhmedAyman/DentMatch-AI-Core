@@ -1,0 +1,17 @@
+============================================================
+  📄 STAGE 3 CLASSIFICATION REPORT
+============================================================
+                                precision    recall    f1-score    support
+
+Dental_Caries              0.97       0.91        0.94            391
+Hypodontia                   0.97       0.93        0.95            188
+Mouth_Ulcer                0.99       0.98        0.99            421
+Periodontal_Disease    0.92       0.99        0.96            548
+Tooth_Discoloration    0.94       0.93        0.94            303
+ 
+accuracy                           	             0.96          1851
+macro avg      	  0.96        0.95        0.95           1851
+weighted avg       	  0.96        0.96        0.96           1851
+
+
+Mean Macro ROC-AUC : 0.9977

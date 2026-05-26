@@ -1,7 +1,7 @@
 tensorflow==2.15.0
 opencv-python-headless==4.9.0.80
 numpy==1.26.4
-transformers
+transformers==4.40.0
 Pillow==10.2.0
 streamlit==1.32.0
 scikit-learn==1.4.1.post1
@@ -11,3 +11,7 @@ fastapi==0.110.0
 uvicorn==0.27.1
 python-multipart==0.0.9
 pandas==2.2.1
+requests==2.31.0
+google-genai
+python-dotenv==1.0.1
+huggingface_hub==0.22.2
