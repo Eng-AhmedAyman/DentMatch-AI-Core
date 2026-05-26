@@ -2,7 +2,7 @@
 title: Healthy Smile AI
 emoji: 🦷
 colorFrom: blue
-colorTo: teal
+colorTo: gray
 sdk: docker
 pinned: false
 ---
