@@ -55,7 +55,7 @@
 
 ## ◈ Why It Matters
 
-> *This isn't just a technical project — it solves a real-world healthcare accessibility crisis.*
+> _This isn't just a technical project — it solves a real-world healthcare accessibility crisis._
 
 ```
 ┌─────────────────────┬──────────────────────────────────────────────────────────┐
@@ -90,12 +90,14 @@ No black boxes. No guessing. **Explainable, auditable, and fast.**
 <td width="49%" valign="top">
 
 ### 🔬 Vision Engine
+
 ```
   INPUT  ──▶  Dental X-ray or photo
   GATE   ──▶  MobileNetV2 domain check
   ENGINE ──▶  EfficientNetB4 diagnosis
   OUTPUT ──▶  Disease class + heatmap
 ```
+
 - Accepts X-rays and clinical photos
 - Rejects blurry, non-dental, or face-containing inputs
 - Classifies **6 oral disease categories**
@@ -107,12 +109,14 @@ No black boxes. No guessing. **Explainable, auditable, and fast.**
 <td width="49%" valign="top">
 
 ### 🗣️ NLP Triage Engine
+
 ```
   INPUT  ──▶  Voice complaint (Arabic)
   NLP    ──▶  Gemini 2.5 Flash
   PARSE  ──▶  Symptoms + chronic cond.
   OUTPUT ──▶  Department + urgency JSON
 ```
+
 - Understands **Egyptian Arabic** natively
 - Extracts symptoms, pain duration, chronic conditions
 - Routes automatically: Endodontics · Surgery · Periodontology
@@ -181,26 +185,26 @@ No black boxes. No guessing. **Explainable, auditable, and fast.**
   ROC-AUC Score  ·  Mean Macro          ──────────────────────  99.77% ████████████████████ ✓
 ```
 
-| # | Model | Role | Accuracy |
-|:---:|:---|:---|:---:|
-| `G` | Haar-Cascade | Privacy guard — rejects identifiable face images | **98%** |
-| `S1` | MobileNetV2 | Domain gatekeeper — blocks non-dental inputs | **96%+** |
-| `S2` | EfficientNetB4 | Core diagnostic engine — 6 disease classes | **96% weighted** |
-| `S3` | Grad-CAM++ | Pixel-level lesion explainability | ✦ XAI |
-| `NLP` | Gemini 2.5 Flash | Symptom extraction + department routing | ✦ LLM |
+|   #   | Model            | Role                                             |     Accuracy     |
+| :---: | :--------------- | :----------------------------------------------- | :--------------: |
+|  `G`  | Haar-Cascade     | Privacy guard — rejects identifiable face images |     **98%**      |
+| `S1`  | MobileNetV2      | Domain gatekeeper — blocks non-dental inputs     |     **96%+**     |
+| `S2`  | EfficientNetB4   | Core diagnostic engine — 6 disease classes       | **96% weighted** |
+| `S3`  | Grad-CAM++       | Pixel-level lesion explainability                |      ✦ XAI       |
+| `NLP` | Gemini 2.5 Flash | Symptom extraction + department routing          |      ✦ LLM       |
 
 <br>
 
 **Per-class breakdown (Stage 3 — EfficientNetB4):**
 
-| Disease Class | Precision | Recall | F1-Score | Support |
-|:---|:---:|:---:|:---:|:---:|
-| Dental Caries | 0.97 | 0.91 | 0.94 | 391 |
-| Hypodontia | 0.97 | 0.93 | 0.95 | 188 |
-| Mouth Ulcer | 0.99 | 0.98 | **0.99** | 421 |
-| Periodontal Disease | 0.92 | 0.99 | 0.96 | 548 |
-| Tooth Discoloration | 0.94 | 0.93 | 0.94 | 303 |
-| **Weighted Avg** | **0.96** | **0.96** | **0.96** | **1851** |
+| Disease Class       | Precision |  Recall  | F1-Score | Support  |
+| :------------------ | :-------: | :------: | :------: | :------: |
+| Dental Caries       |   0.97    |   0.91   |   0.94   |   391    |
+| Hypodontia          |   0.97    |   0.93   |   0.95   |   188    |
+| Mouth Ulcer         |   0.99    |   0.98   | **0.99** |   421    |
+| Periodontal Disease |   0.92    |   0.99   |   0.96   |   548    |
+| Tooth Discoloration |   0.94    |   0.93   |   0.94   |   303    |
+| **Weighted Avg**    | **0.96**  | **0.96** | **0.96** | **1851** |
 
 <sub>Mean Macro ROC-AUC: **0.9977**</sub>
 
@@ -212,7 +216,7 @@ No black boxes. No guessing. **Explainable, auditable, and fast.**
 
 ## ◈ Real Clinical Scenario
 
-*This is what actually happens when a patient submits a complaint:*
+_This is what actually happens when a patient submits a complaint:_
 
 ```
   ┌─────────────────────────────────────────────────────────────────┐
@@ -245,7 +249,7 @@ No black boxes. No guessing. **Explainable, auditable, and fast.**
 
 <br>
 
-*Here's the same flow live in the dashboard — patient types a complaint in Arabic, AI routes it instantly:*
+_Here's the same flow live in the dashboard — patient types a complaint in Arabic, AI routes it instantly:_
 
 <div align="center">
 <img src="reports/figures/DentMatch-Healthy-Smile-AI-05-26-2026_02_54_AM.png" width="88%" alt="Live Arabic NLP triage — Symptom Analyzer result" />
@@ -260,7 +264,7 @@ No black boxes. No guessing. **Explainable, auditable, and fast.**
 
 ## ◈ Explainability
 
-> *Medical AI that can't explain itself isn't medical AI — it's liability.*
+> _Medical AI that can't explain itself isn't medical AI — it's liability._
 
 <table border="0"><tr>
 <td width="52%">
@@ -283,6 +287,7 @@ Every image diagnosis is paired with a **Grad-CAM++ heatmap** — a pixel-level 
 ```
 
 This means:
+
 - Clinicians verify AI reasoning at a glance
 - Misdiagnosis risks are visible and auditable
 - Regulatory compliance is built in from day one
@@ -298,7 +303,7 @@ This means:
 
 <br>
 
-*Two different cases — both explained at the pixel level:*
+_Two different cases — both explained at the pixel level:_
 
 <div align="center">
 
@@ -323,7 +328,7 @@ This means:
 
 ## ◈ Live Demo
 
-*The full dashboard has three tabs — each one a complete AI workflow:*
+_The full dashboard has three tabs — each one a complete AI workflow:_
 
 <div align="center">
 
@@ -366,7 +371,7 @@ Full REST API docs
 
 <br>
 
-*Tab 2 — AI Performance & Analytics: full model evaluation dashboard with confusion matrix, ROC curves, t-SNE, and sample predictions:*
+_Tab 2 — AI Performance & Analytics: full model evaluation dashboard with confusion matrix, ROC curves, t-SNE, and sample predictions:_
 
 <div align="center">
 <img src="reports/figures/DentMatch-Healthy-Smile-AI-05-26-2026_02_52_AM (1).png" width="72%" alt="AI Performance & Analytics tab — confusion matrix, t-SNE, sample predictions" />
@@ -374,7 +379,7 @@ Full REST API docs
 
 <br>
 
-*Tab 3 — FastAPI Integration Hub: ready-to-use curl and Python code for every endpoint:*
+_Tab 3 — FastAPI Integration Hub: ready-to-use curl and Python code for every endpoint:_
 
 <div align="center">
 <img src="reports/figures/DentMatch-Healthy-Smile-AI-05-26-2026_02_52_AM (2).png" width="88%" alt="API Integration Hub — curl and Python examples" />
@@ -392,7 +397,7 @@ Full REST API docs
 
 ## ◈ Sample AI Predictions
 
-*9 real model predictions from the test set — all correctly classified at high confidence:*
+_9 real model predictions from the test set — all correctly classified at high confidence:_
 
 <div align="center">
 <img src="reports/figures/predictions_grid.png" width="90%" alt="Sample AI predictions — 9 disease classes with confidence scores" />
@@ -407,7 +412,7 @@ Full REST API docs
 
 ## ◈ Security Architecture
 
-*Every request passes through five layers before inference ever runs.*
+_Every request passes through five layers before inference ever runs._
 
 ```
 ┌─────────────┬──────────────────────────────┬───────────────────────────────────┐
@@ -421,7 +426,7 @@ Full REST API docs
 └─────────────┴──────────────────────────────┴───────────────────────────────────┘
 ```
 
-*Stage 1 domain gate — binary classifier confusion matrix (498 Not_Teeth correctly rejected, 773 Teeth correctly passed, 0 false positives):*
+_Stage 1 domain gate — binary classifier confusion matrix (498 Not_Teeth correctly rejected, 773 Teeth correctly passed, 0 false positives):_
 
 <div align="center">
 <img src="reports/figures/stage1_confusion_matrix.png" width="55%" alt="Stage 1 Security Guard — Confusion Matrix" />
@@ -439,6 +444,7 @@ Full REST API docs
 <td valign="top" width="50%">
 
 **AI Layer**
+
 ```
 Vision  ── TensorFlow · Keras
             EfficientNetB4 · MobileNetV2
@@ -453,6 +459,7 @@ NLP     ── Google Gemini 2.5 Flash
 <td valign="top" width="50%">
 
 **Infrastructure Layer**
+
 ```
 Backend ── FastAPI · Uvicorn · Pydantic
 Frontend── Streamlit
@@ -537,8 +544,10 @@ curl -X POST "http://127.0.0.1:8000/analyze/" \
   "prediction": "Caries",
   "confidence": 0.94,
   "all_scores": {
-    "Dental_Caries": 0.94, "Hypodontia": 0.02,
-    "Mouth_Ulcer": 0.01,   "Periodontal_Disease": 0.02,
+    "Dental_Caries": 0.94,
+    "Hypodontia": 0.02,
+    "Mouth_Ulcer": 0.01,
+    "Periodontal_Disease": 0.02,
     "Tooth_Discoloration": 0.01
   },
   "heatmap_base64": "...",
@@ -753,22 +762,22 @@ before the clinic visit
 
 **Planned**
 
-| Feature | Description |
-|:---|:---|
-| EHR Integration | HL7/FHIR-compliant endpoints |
-| Arabic Voice NLP | Full dialect-aware Arabic ASR |
-| Async Queue | Celery + Redis for concurrent load |
-| Mobile App | Flutter/React Native patient app |
+| Feature          | Description                        |
+| :--------------- | :--------------------------------- |
+| EHR Integration  | HL7/FHIR-compliant endpoints       |
+| Arabic Voice NLP | Full dialect-aware Arabic ASR      |
+| Async Queue      | Celery + Redis for concurrent load |
+| Mobile App       | Flutter/React Native patient app   |
 
 </td>
 <td valign="top" width="50%">
 
 **Research**
 
-| Feature | Description |
-|:---|:---|
+| Feature            | Description                                           |
+| :----------------- | :---------------------------------------------------- |
 | Federated Learning | Train across hospital nodes without centralizing data |
-| X-ray Module | CBCT + panoramic X-ray pipeline support |
+| X-ray Module       | CBCT + panoramic X-ray pipeline support               |
 
 </td>
 </tr></table>
@@ -820,10 +829,10 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/ahmed-ayman-10b966292/)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Eng-AhmedAyman)
-
+[![Gmail](https://img.shields.io/badge/Gmail-D14836?style=flat-square&logo=gmail&logoColor=white)](https://mail.google.com/mail/?view=cm&fs=1&to=ahmedayman162210@gmail.com)
 <br>
 
-*"The best medical AI makes a doctor's judgment sharper — not obsolete."*
+_"The best medical AI makes a doctor's judgment sharper — not obsolete."_
 
 <br>
 
