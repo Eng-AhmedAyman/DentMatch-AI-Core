@@ -213,9 +213,7 @@ class DentalAI_System:
             from transformers import pipeline as hf_pipeline
 
             self.stage2_triage = hf_pipeline(
-                "image-classification",
-                model=STAGE2_PATH,
-                model_kwargs={"from_pt": True},
+                "image-classification", model=STAGE2_PATH, framework="pt"
             )
             print("   ✅ [STAGE 2 READY]")
 
