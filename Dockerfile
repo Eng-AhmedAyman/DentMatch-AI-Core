@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxrender1 \
     libxext6 \
-    libgl1-mesa-glx \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first (Docker layer cache)
@@ -33,4 +33,5 @@ RUN chmod +x start.sh
 # HuggingFace Spaces requires port 7860
 EXPOSE 7860
 
-CMD ["./start.sh"]
+# Run FastAPI directly on the public port
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]
