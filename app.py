@@ -552,25 +552,25 @@ def _render_report(
     pain_duration: str = "",
     chronic_disease: str = "",
 ) -> None:
-    assessment = report.get("التقييم_الطبي_المبدئي", {})
-    history = report.get("الأعراض_والتاريخ_المرضي", {})
-    care_plan = report.get("خطة_الرعاية_والتوجيه", {})
-    doc_info = report.get("معلومات_الوثيقة", {})
+    assessment = report.get("initial_medical_assessment", {})
+    history = report.get("symptoms_and_history", {})
+    care_plan = report.get("care_and_referral_plan", {})
+    doc_info = report.get("document_info", {})
     llm_meta = report.get("_llm_meta", {})
     internal = report.get("_internal", {})
     probs = internal.get("disease_probabilities", {})
 
-    diagnosis = assessment.get("تصنيف_الحالة", "")
-    ai_text = assessment.get("تشخيص_الذكاء_الاصطناعي", "")
-    dept_ar = assessment.get("القسم_الجامعي_المختص", "")
-    priority = assessment.get("مستوى_أولوية_الحالة", "")
-    action = care_plan.get("الخطوات_القادمة", "")
-    disclaimer = report.get("إخلاء_مسؤولية_قانونية", "")
-    file_no = doc_info.get("رقم_الملف_الطبي", "—")
-    issued_at = doc_info.get("تاريخ_الإصدار", "—")
+    diagnosis = assessment.get("case_classification", "")
+    ai_text = assessment.get("ai_diagnosis", "")
+    dept_ar = assessment.get("specialized_university_department", "")
+    priority = assessment.get("case_priority_level", "")
+    action = care_plan.get("next_steps", "")
+    disclaimer = report.get("legal_disclaimer", "")
+    file_no = doc_info.get("medical_file_number", "—")
+    issued_at = doc_info.get("issue_date", "—")
 
-    display_pain = history.get("مدة_الألم_المسجلة", pain_duration or "غير محدد")
-    display_chronic = history.get("الأمراض_المزمنة", chronic_disease or "لا يوجد")
+    display_pain = history.get("recorded_pain_duration", pain_duration or "غير محدد")
+    display_chronic = history.get("chronic_diseases", chronic_disease or "لا يوجد")
 
     dept_eng_llm = llm_meta.get("target_department_eng", "")
     is_needs_clarif = dept_eng_llm in ("Needs_Clarification", "Out_of_Domain")
@@ -1198,8 +1198,8 @@ text-align: center;
                     _render_report(result)
 
                     stages_passed = result.get("_internal", {}).get("stages_passed", 0)
-                    diagnosis_key = result.get("التقييم_الطبي_المبدئي", {}).get(
-                        "تصنيف_الحالة", ""
+                    diagnosis_key = result.get("initial_medical_assessment", {}).get(
+                        "case_classification", ""
                     )
                     is_healthy = diagnosis_key.startswith("Healthy")
 

@@ -20,12 +20,11 @@ DESCRIPTION:
     dashboard can render them with a single ``_render_report()`` function.
 
 REPORT SCHEMA (identical for both endpoints):
-    معلومات_الوثيقة
-    الأعراض_والتاريخ_المرضي
-    التقييم_الطبي_المبدئي   ← contains confidence_score, stages_passed, etc.
-    احتمالات_الأمراض
-    خطة_الرعاية_والتوجيه
-    إخلاء_مسؤولية_قانونية
+    document_info
+    symptoms_and_history
+    initial_medical_assessment   ← contains confidence_score, stages_passed, etc.
+    care_and_referral_plan
+    legal_disclaimer
 
 DEPENDENCIES:
     fastapi, uvicorn, python-multipart, pydantic, google-genai,
@@ -290,28 +289,28 @@ def _build_image_report(
     info = DIAGNOSIS_MAP.get(raw_diagnosis, DIAGNOSIS_MAP["Healthy"])
 
     return {
-        "معلومات_الوثيقة": {
-            "رقم_الملف_الطبي": f"{file_prefix}-{int(time.time())}",
-            "تاريخ_الإصدار": raw_report.get(
+        "document_info": {
+            "medical_file_number": f"{file_prefix}-{int(time.time())}",
+            "issue_date": raw_report.get(
                 "timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             ),
-            "مصدر_التقرير": source_label,
+            "report_source": source_label,
         },
-        "الأعراض_والتاريخ_المرضي": {
-            "مدة_الألم_المسجلة": pain_duration,
-            "الأمراض_المزمنة": chronic_diseases,
+        "symptoms_and_history": {
+            "recorded_pain_duration": pain_duration,
+            "chronic_diseases": chronic_diseases,
         },
-        "التقييم_الطبي_المبدئي": {
-            # تصنيف_الحالة carries the display name (Arabic + English)
-            "تصنيف_الحالة": info["ar_name"],
-            "تشخيص_الذكاء_الاصطناعي": info["ai_diagnosis"],
-            "القسم_الجامعي_المختص": info["dept_ar"],
-            "مستوى_أولوية_الحالة": info["priority"],
+        "initial_medical_assessment": {
+            # case_classification carries the display name (Arabic + English)
+            "case_classification": info["ar_name"],
+            "ai_diagnosis": info["ai_diagnosis"],
+            "specialized_university_department": info["dept_ar"],
+            "case_priority_level": info["priority"],
         },
-        "خطة_الرعاية_والتوجيه": {
-            "الخطوات_القادمة": info["action"],
+        "care_and_referral_plan": {
+            "next_steps": info["action"],
         },
-        "إخلاء_مسؤولية_قانونية": (
+        "legal_disclaimer": (
             "هذا التقرير استرشادي صادر آلياً عن منظومة DentMatch AI، "
             "ولا يُغني عن الفحص السريري المباشر من طبيب الأسنان المختص."
         ),
@@ -654,27 +653,27 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
     )
 
     formatted_report = {
-        "معلومات_الوثيقة": {
-            "رقم_الملف_الطبي": f"DM-TXT-{int(time.time())}",
-            "تاريخ_الإصدار": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "مصدر_التقرير": "المنصة الذكية للفرز الطبي - DentMatch AI",
+        "document_info": {
+            "medical_file_number": f"DM-TXT-{int(time.time())}",
+            "issue_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "report_source": "المنصة الذكية للفرز الطبي - DentMatch AI",
         },
-        "الأعراض_والتاريخ_المرضي": {
-            "مدة_الألم_المسجلة": extracted.get("pain_duration", "غير محدد"),
-            "الأمراض_المزمنة": extracted.get("chronic_conditions", "لا يوجد"),
+        "symptoms_and_history": {
+            "recorded_pain_duration": extracted.get("pain_duration", "غير محدد"),
+            "chronic_diseases": extracted.get("chronic_conditions", "لا يوجد"),
         },
-        "التقييم_الطبي_المبدئي": {
+        "initial_medical_assessment": {
             # ── Unified display name — same format as /analyze/ ──
             # e.g. "Dental Caries - تسوس في الأسنان"  (never a raw dept code)
-            "تصنيف_الحالة": diag_info["ar_name"],
-            "تشخيص_الذكاء_الاصطناعي": ai_diagnosis_text,
-            "القسم_الجامعي_المختص": diag_info["dept_ar"],
-            "مستوى_أولوية_الحالة": diag_info["priority"],
+            "case_classification": diag_info["ar_name"],
+            "ai_diagnosis": ai_diagnosis_text,
+            "specialized_university_department": diag_info["dept_ar"],
+            "case_priority_level": diag_info["priority"],
         },
-        "خطة_الرعاية_والتوجيه": {
-            "الخطوات_القادمة": action_text,
+        "care_and_referral_plan": {
+            "next_steps": action_text,
         },
-        "إخلاء_مسؤولية_قانونية": (
+        "legal_disclaimer": (
             "هذا التقرير استرشادي صادر آلياً عن منظومة DentMatch AI، "
             "ولا يُغني عن الفحص السريري المباشر من طبيب الأسنان المختص."
         ),
