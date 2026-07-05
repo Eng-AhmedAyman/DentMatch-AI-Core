@@ -26,6 +26,7 @@ VERSION: 1.0.0  ( DentMatch )
 # ==============================================================================
 import io
 import json
+import os
 import time
 from datetime import datetime
 
@@ -509,7 +510,15 @@ setInterval(fixBtn, 400);
 # ==============================================================================
 # ZONE 4: CONSTANTS
 # ==============================================================================
-API_BASE_URL: str = "http://127.0.0.1:8000"
+# Defaults to the deployed public API on Hugging Face — this is what's
+# actually reachable, since the Space's Docker image runs FastAPI directly
+# on the public port (colleagues call /analyze/, /triage-symptoms/, /docs
+# on this URL). Override with an environment variable only if you're running
+# BOTH api.py and app.py together on your own machine via start.sh, e.g.:
+#   set API_BASE_URL=http://127.0.0.1:8000
+API_BASE_URL: str = os.environ.get(
+    "API_BASE_URL", "https://eng-ahmedayman10-healthysmile-ai.hf.space"
+)
 ANALYZE_ENDPOINT: str = f"{API_BASE_URL}/analyze/"
 TRIAGE_ENDPOINT: str = f"{API_BASE_URL}/triage-symptoms/"
 

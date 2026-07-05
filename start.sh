@@ -1,11 +1,18 @@
 #!/bin/bash
 # ==============================================================================
 # FILE: start.sh
-# Entrypoint for DentMatch AI on Hugging Face Spaces
+# LOCAL DEV CONVENIENCE SCRIPT — NOT used by the Dockerfile/deployed Space.
 #
-# HF Spaces exposes ONE port (7860). Architecture:
-#   - Streamlit  → port 7860  (public-facing, what HF exposes)
-#   - FastAPI    → port 8000  (internal only, Streamlit talks to it internally)
+# The deployed HF Space runs FastAPI directly on the public port, because
+# colleagues/clients call the API endpoints (/analyze/, /triage-symptoms/,
+# /docs) directly on the Space's public URL — the Streamlit dashboard is
+# not part of that deployment.
+#
+# This script exists for running BOTH processes together on your own machine
+# (e.g. to test the dashboard against a local API instead of the public one):
+#   - FastAPI    → port 8000  (internal, this script's own use only)
+#   - Streamlit  → port 7860  (public-facing on your machine)
+# To use it locally:  bash start.sh
 # ==============================================================================
 
 set -e
@@ -45,8 +52,10 @@ until python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.
 done
 echo "✅ FastAPI backend check finished after ${WAITED}s."
 
-# 3. Start Streamlit on port 7860 (the port HF Spaces exposes publicly)
+# 3. Start Streamlit on port 7860, pointed at the locally-running FastAPI
+#    above (app.py otherwise defaults to the public deployed API).
 echo "[2/2] Starting Streamlit dashboard (public port 7860)..."
+export API_BASE_URL="http://127.0.0.1:8000"
 streamlit run app.py \
     --server.port 7860 \
     --server.address 0.0.0.0 \

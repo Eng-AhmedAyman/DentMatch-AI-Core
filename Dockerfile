@@ -27,13 +27,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the full project
 COPY . .
 
-# Make entrypoint executable
+# Make entrypoint executable (kept for local/dev convenience — not used by
+# this image's CMD, since the deployed Space serves the FastAPI backend
+# directly to external callers, not the Streamlit dashboard)
 RUN chmod +x start.sh
 
 # HuggingFace Spaces requires port 7860
 EXPOSE 7860
 
-# Run start.sh — launches FastAPI internally (port 8000) AND the
-# Streamlit dashboard on the public port (7860). Running uvicorn alone
-# here would skip the dashboard entirely.
-CMD ["./start.sh"]
+# Run FastAPI directly on the public port — colleagues call /analyze/,
+# /triage-symptoms/, and /docs on this Space's public URL directly, so the
+# API must be reachable externally, not just inside the container.
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]
