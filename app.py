@@ -582,8 +582,27 @@ def _render_report(
     display_chronic = history.get("chronic_diseases", chronic_disease or "لا يوجد")
 
     dept_eng_llm = llm_meta.get("target_department_eng", "")
-    is_needs_clarif = dept_eng_llm in ("Needs_Clarification", "Out_of_Domain")
-    is_healthy = diagnosis.startswith("Healthy") and not is_needs_clarif
+    is_out_of_domain = dept_eng_llm == "Out_of_Domain"
+    is_needs_clarif = dept_eng_llm == "Needs_Clarification"
+    is_healthy = diagnosis.startswith("Healthy") and not (
+        is_needs_clarif or is_out_of_domain
+    )
+
+    # Stage 3 is a closed 5-class classifier — it has no "other disease" option,
+    # so it cannot literally say an image is "out of scope". Instead, when its
+    # top-class confidence falls below master_pipeline.py's SAFETY_THRESHOLD,
+    # it sets requires_human_review=True. Previously this flag was computed
+    # but never shown to the patient — surfaced here as a clear caveat instead
+    # of silently presenting a low-confidence guess as a certain diagnosis.
+    requires_review = bool(internal.get("requires_human_review", False))
+
+    if requires_review:
+        ai_text = (
+            "⚠️ الصورة دي مش واضح إنها بتطابق حالة من الحالات الخمس اللي النظام "
+            "متدرب عليها (تسوس، نقص أسنان، تقرح فم، التهاب لثة، تغيّر لون الأسنان). "
+            "يُرجى مراجعة طبيب أسنان مباشرة للتقييم الدقيق، والتشخيص التالي "
+            "للاسترشاد فقط وليس تأكيدًا:<br><br>" + ai_text
+        )
 
     if is_needs_clarif:
         accent = "#ffbb00"
@@ -591,6 +610,24 @@ def _render_report(
         glow_color = "rgba(255, 187, 0, 0.25)"
         icon = "◈"
         header_label = "NEEDS CLARIFICATION"
+        stripe_grad = (
+            "linear-gradient(135deg, rgba(255,187,0,0.15), rgba(255,187,0,0.03))"
+        )
+    elif is_out_of_domain:
+        accent = "#8899bb"
+        badge_bg = "rgba(136, 153, 187, 0.08)"
+        glow_color = "rgba(136, 153, 187, 0.25)"
+        icon = "○"
+        header_label = "OUT OF SCOPE — DENTAL ONLY"
+        stripe_grad = (
+            "linear-gradient(135deg, rgba(136,153,187,0.15), rgba(136,153,187,0.03))"
+        )
+    elif requires_review:
+        accent = "#ffbb00"
+        badge_bg = "rgba(255, 187, 0, 0.08)"
+        glow_color = "rgba(255, 187, 0, 0.25)"
+        icon = "◈"
+        header_label = "LOW CONFIDENCE — HUMAN REVIEW NEEDED"
         stripe_grad = (
             "linear-gradient(135deg, rgba(255,187,0,0.15), rgba(255,187,0,0.03))"
         )
@@ -1363,18 +1400,26 @@ margin-top: 8px;
                     triage_data = {}
 
             if triage_data:
-                llm_meta = triage_data.get("_llm_meta", {})
-                dept_eng = llm_meta.get("target_department_eng", "")
-                is_emergency = llm_meta.get("is_emergency", False)
-
-                if is_emergency:
-                    st.error("🚨 حالة طوارئ طبية!")
-                elif dept_eng in ("Needs_Clarification", "Out_of_Domain"):
-                    st.warning("⚠️ محتاجين تفاصيل أكتر.")
+                # New minimal response for out-of-scope complaints — api.py
+                # skips generating the full report entirely for these (saves
+                # tokens), so render it as a plain info message, not a card.
+                if triage_data.get("status") == "out_of_scope":
+                    st.info(
+                        f"🦷 {triage_data.get('message', 'الشكوى غير متعلقة بطب الأسنان.')}"
+                    )
                 else:
-                    st.success("✦  تم توجيه الحالة بنجاح")
+                    llm_meta = triage_data.get("_llm_meta", {})
+                    dept_eng = llm_meta.get("target_department_eng", "")
+                    is_emergency = llm_meta.get("is_emergency", False)
 
-                _render_report(triage_data)
+                    if is_emergency:
+                        st.error("🚨 حالة طوارئ طبية!")
+                    elif dept_eng == "Needs_Clarification":
+                        st.warning("⚠️ محتاجين تفاصيل أكتر.")
+                    else:
+                        st.success("✦  تم توجيه الحالة بنجاح")
+
+                    _render_report(triage_data)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

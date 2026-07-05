@@ -175,6 +175,24 @@ DIAGNOSIS_MAP: dict[str, dict] = {
         ),
         "priority": "حالة روتينية 🟢",
     },
+    "Out_of_Domain": {
+        # Distinct from "Healthy" — an out-of-domain complaint (e.g. knee pain)
+        # says nothing about the patient's dental health, so labelling it
+        # "Healthy" would be misleading. This entry is honest about what the
+        # system actually knows: nothing dental-related was described.
+        "ar_name": "Out of Scope - الشكوى خارج نطاق طب الأسنان",
+        "dept_eng": "N/A",
+        "dept_ar": "غير متعلق بطب الأسنان",
+        "ai_diagnosis": (
+            "هذه المنصة مخصصة لتقييم مشاكل الأسنان واللثة فقط. الشكوى الموصوفة "
+            "لا تبدو متعلقة بطب الأسنان."
+        ),
+        "action": (
+            "يرجى مراجعة التخصص الطبي المناسب لحالتك. لو كان لديك أيضاً أي شكوى "
+            "متعلقة بالأسنان، يسعدنا مساعدتك من خلال وصفها بشكل منفصل."
+        ),
+        "priority": "خارج النطاق ⚪",
+    },
 }
 
 # ==============================================================================
@@ -191,7 +209,7 @@ _DEPT_TO_DIAGNOSIS_KEY: dict[str, str] = {
     "Remove": "Hypodontia",  # تعويض متحرك → نقص أسنان
     "Surgery": "Dental_Caries",  # جراحة → تسوس/جذور
     "Needs_Clarification": "Healthy",  # fallback — no disease confirmed
-    "Out_of_Domain": "Healthy",  # not dental
+    "Out_of_Domain": "Out_of_Domain",  # not dental — honest label, not "Healthy"
 }
 
 
@@ -494,10 +512,17 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
     Special return states
     ---------------------
     ``Needs_Clarification`` — Complaint is too vague for confident routing.
-    ``Out_of_Domain``       — Complaint is unrelated to dentistry.
+                              Still returns the full unified report (asks for
+                              more detail in ``next_steps``).
+    Out-of-scope complaints — Short-circuited BEFORE the full report is built:
+                              returns ``{"status": "out_of_scope", "message": ...}``
+                              instead, to avoid spending output tokens on
+                              report fields that don't apply to a non-dental
+                              complaint, and to avoid mislabeling it as a
+                              dental department or "Healthy".
 
-    The response schema is **identical** to ``/analyze/`` so both endpoints
-    can be consumed by the same client-side rendering logic.
+    The full-report response schema is **identical** to ``/analyze/`` so both
+    endpoints can be consumed by the same client-side rendering logic.
 
     Parameters
     ----------
@@ -532,10 +557,28 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
     # Strict prompt — zero temperature for clinical consistency
     prompt = f"""
     أنت مساعد ذكي لفرز حالات طب الأسنان في منصة "DentMatch AI".
-    مهمتك تحليل شكوى المريض وتوجيهها للقسم الجامعي الصحيح.
 
     ══════════════════════════════════════════
-    ⚠️ قاعدة ذهبية — اقرأها أولاً:
+    ⚡ الخطوة الأولى (الأهم) — قرار النطاق:
+    اقرأ الشكوى وقرر فورًا: هل هي متعلقة بطب الأسنان (أسنان/لثة/فم/فك) بأي شكل،
+    ولو بشكل غير مباشر؟ أم أنها لا علاقة لها بطب الأسنان إطلاقًا
+    (مثل: ألم ركبة، صداع، مشكلة في المعدة، سؤال عام، دردشة)؟
+
+    - إذا كانت الشكوى لا علاقة لها بطب الأسنان إطلاقًا:
+      أرجع فقط الحقلين التاليين ولا شيء غيرهما (توفيرًا للمعالجة):
+      {{
+        "is_out_of_scope": true,
+        "message": "اعتذار قصير بالعامية المصرية (سطر أو سطرين) يوضح أن هذه المنصة
+                     مخصصة لطب الأسنان فقط وأن شكواه تبدو غير متعلقة بذلك،
+                     وينصحه بمراجعة التخصص الطبي المناسب."
+      }}
+      توقف هنا ولا تكمل باقي الحقول أدناه إطلاقًا.
+
+    - إذا كانت متعلقة بطب الأسنان (حتى لو غامضة): أضف "is_out_of_scope": false
+      واستكمل توليد كل الحقول الموصوفة أدناه بالكامل.
+    ══════════════════════════════════════════
+
+    ⚠️ قاعدة ذهبية للحالات السنية:
     أي شكوى فيها ذكر لـ (ألم، وجع، ضرس، سن، لثة، أسنان، تسوس، جير، خلع، تركيبة)
     = شكوى واضحة تماماً → يجب توجيهها لقسم مباشرةً.
     إياك تستخدم Needs_Clarification إلا لو الكلام عشوائي 100% مثل "asdfgh" أو "لا شيء".
@@ -549,7 +592,6 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
     - Remove    : تعويض أسنان مفقودة بطقم متحرك.
     - Surgery   : خلع ضرس، بقايا جذور، ضرس العقل.
     - Needs_Clarification: فقط إذا كان الكلام حروف عشوائية أو جمل غير مفهومة لا علاقة لها بالأسنان.
-    - Out_of_Domain: شكوى خارج طب الأسنان تماماً (مثل: ألم في الركبة، صداع، الخ).
 
     ══════════════════════════════════════════
     أمثلة توضيحية (few-shot):
@@ -582,13 +624,15 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
 
     شكوى المريض: "{request.symptoms_description}"
 
-    قم بإرجاع رد بصيغة JSON فقط يحتوي على المفاتيح التالية:
+    قم بإرجاع رد بصيغة JSON فقط يحتوي على المفاتيح التالية (لأن الشكوى متعلقة
+    بطب الأسنان — راجع قرار النطاق في الخطوة الأولى):
+    - "is_out_of_scope": false (لأننا وصلنا هنا فقط إذا كانت الشكوى سنية).
     - "is_emergency": (اجعلها false دائماً).
     - "extracted_data": JSON يحتوي على ("pain_duration", "chronic_conditions"). اكتب "غير محدد" إذا لم يذكرها.
     - "complexity_level": (Easy أو Medium أو Complex).
     - "recommended_student_level": (طالب بكالوريوس / طبيب امتياز / دراسات عليا).
     - "patient_friendly_diagnosis": تشخيص مبدئي بالعامية المصرية يطمئن المريض.
-    - "target_department_eng": (Endo, Operative, Perio, Fixed, Remove, Surgery, Needs_Clarification, Out_of_Domain).
+    - "target_department_eng": (Endo, Operative, Perio, Fixed, Remove, Surgery, Needs_Clarification).
     - "target_department_ar": اسم القسم بالعربية.
     - "action_plan": خطة العمل بالعامية. قواعد:
         * إذا كانت الحالة Needs_Clarification: اطلب منه بلطف إعادة كتابة الشكوى بتفاصيل أكثر في مربع النص.
@@ -625,6 +669,23 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
         return JSONResponse(
             status_code=500,
             content={"status": "error", "message": str(exc)},
+        )
+
+    # ── Early exit: complaint is unrelated to dentistry ──────────────────────
+    # The prompt instructs the model to stop after just these two fields when
+    # out of scope, so this path never builds the full unified report (saves
+    # output tokens and avoids mislabeling an unrelated complaint as "Healthy"
+    # or any dental department).
+    if data.get("is_out_of_scope"):
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "out_of_scope",
+                "message": data.get(
+                    "message",
+                    "الشكوى دي مش متعلقة بطب الأسنان. يرجى مراجعة التخصص الطبي المناسب.",
+                ),
+            },
         )
 
     # Build unified report (identical schema to /analyze/)
