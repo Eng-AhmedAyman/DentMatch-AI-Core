@@ -73,7 +73,7 @@ pinned: false
 [![Status](https://img.shields.io/badge/Status-Production_Ready-00C896?style=for-the-badge&labelColor=0D0D0D)](.)&nbsp;
 [![Accuracy](https://img.shields.io/badge/Accuracy-96%25_Weighted-00C896?style=for-the-badge&labelColor=0D0D0D)](.)&nbsp;
 [![ROC AUC](https://img.shields.io/badge/ROC_AUC-0.9977-7F77DD?style=for-the-badge&labelColor=0D0D0D)](.)&nbsp;
-[![Zero False Positives](https://img.shields.io/badge/False_Positives-Zero-FF6B6B?style=for-the-badge&labelColor=0D0D0D)](.)
+[![Domain Gate Accuracy](https://img.shields.io/badge/Domain_Gate_Accuracy-98%25-FF6B6B?style=for-the-badge&labelColor=0D0D0D)](.)
 
 <br>
 
@@ -123,7 +123,7 @@ Egypt's university dental hospitals process thousands of walk-in patients daily 
 
 **One system. Three problems solved simultaneously.**
 
-A production-grade, multi-modal AI engine that handles the full triage workflow — from a patient's dental image or Egyptian Arabic voice complaint, to a structured clinical routing decision landing in the right doctor's queue.
+A production-grade, multi-modal AI engine that handles the full triage workflow — from a patient's dental image or typed Egyptian Arabic complaint, to a structured clinical routing decision landing in the right doctor's queue. (Voice input is on the [Roadmap](#-roadmap), not live yet.)
 
 > No black boxes. No guessing. **Explainable, auditable, and built for trust.**
 
@@ -182,7 +182,7 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
 ### 🗣️ NLP Triage Engine
 
 ```
-  INPUT  ──▶  Voice or text complaint (Egyptian Arabic)
+  INPUT  ──▶  Typed text complaint (Egyptian Arabic)
   NLP    ──▶  Gemini 2.5 Flash  (medical LLM)
   PARSE  ──▶  Symptoms + chronic conditions
   OUTPUT ──▶  Department + urgency-level JSON
@@ -211,7 +211,7 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
 ```
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                        PATIENT ENTRY POINT                               ║
-║                (image upload  ·  voice note  ·  typed text)              ║
+║                       (image upload  ·  typed text)                      ║
 ╚═════════════════════════════╤════════════════════════════════════════════╝
                               │
               ┌───────────────▼───────────────┐
@@ -220,7 +220,7 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
               └───────┬───────────────┬────────┘
                       │               │
         ┌─────────────▼──┐       ┌────▼──────────────────┐
-        │  IMAGE / X-RAY │       │   TEXT / VOICE INPUT   │
+        │  IMAGE / X-RAY │       │      TEXT INPUT        │
         └──────┬──────────┘      └───────────┬────────────┘
                │                             │
         ┌──────▼──────────┐      ┌───────────▼───────────┐
@@ -277,45 +277,49 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
 
 ## 🧪 Real Clinical Scenario
 
-_This is exactly what happens when a patient submits a complaint in Egyptian Arabic:_
+_This is exactly what happens when a patient types a complaint in Egyptian Arabic:_
 
 ```
   ┌──────────────────────────────────────────────────────────────────┐
-  │  🎙️  PATIENT INPUT  (Egyptian Arabic — as spoken, not typed)     │
+  │  ⌨️   PATIENT INPUT  (Egyptian Arabic — typed)                    │
   │                                                                  │
-  │  "عندي ألم شديد في سني من 3 أيام وعندي سكر"                   │
-  │  "I've had severe tooth pain for 3 days — and I have diabetes."  │
+  │  "عندي ألم شديد في ضرسي بيصحيني من النوم"                      │
+  │  "I have severe tooth pain that wakes me up at night."           │
   └────────────────────────────┬─────────────────────────────────────┘
                                │
                                ▼
   ┌──────────────────────────────────────────────────────────────────┐
   │  🧠  AI PROCESSING  (Gemini 2.5 Flash + Medical Prompt Engine)   │
   │                                                                  │
-  │  ├── ✅  Chronic condition detected  →  Diabetes                 │
-  │  ├── ✅  Pain duration extracted     →  3 days                   │
-  │  ├── ✅  Severity classified         →  HIGH URGENCY             │
-  │  └── ✅  Department matched          →  Endodontics              │
+  │  ├── ✅  Severity pattern matched   →  severe + night pain       │
+  │  ├── ✅  Complexity classified      →  Medium                    │
+  │  └── ✅  Department matched         →  Endo (root canal)         │
   └────────────────────────────┬─────────────────────────────────────┘
                                │
                                ▼
   ┌──────────────────────────────────────────────────────────────────┐
-  │  📍  ROUTING DECISION  (JSON — EHR ready)                        │
+  │  📍  ROUTING DECISION  (unified report — same schema as         │
+  │      /analyze/, so both surfaces render identically)            │
   │                                                                  │
   │  {                                                               │
-  │    "department"         :  "Endodontics",                        │
-  │    "urgency"            :  "High",                               │
-  │    "chronic_conditions" :  ["Diabetes"],                         │
-  │    "pain_duration"      :  "3 days",                             │
-  │    "recommended_level"  :  "Postgraduate Student"                │
+  │    "initial_medical_assessment": {                               │
+  │      "case_classification": "Dental Caries - تسوس في الأسنان",  │
+  │      "specialized_university_department": "قسم علاج الجذور"     │
+  │    },                                                            │
+  │    "_llm_meta": {                                                │
+  │      "target_department_eng": "Endo",                           │
+  │      "complexity_level": "Medium",                               │
+  │      "recommended_student_level": "طبيب امتياز"                 │
+  │    }                                                             │
   │  }                                                               │
   └──────────────────────────────────────────────────────────────────┘
 
-  ✅  Voice note → structured clinical routing report in under 2 seconds.
+  ✅  Typed complaint → structured clinical routing report in under 2 seconds.
 ```
 
 <br>
 
-_Live in the dashboard — patient types or speaks a complaint, AI routes it instantly:_
+_Live in the dashboard — patient types a complaint, AI routes it instantly:_
 
 <div align="center">
 <img src="reports/figures/DentMatch-Healthy-Smile-AI-05-26-2026_02_54_AM.png" width="88%" alt="Live Arabic NLP triage result" style="border-radius:12px;" />
@@ -404,7 +408,7 @@ _The full dashboard runs three complete AI workflows in one interface:_
 
 <br>
 
-|         🖼️ Image Track         |        🎙️ Voice / Text Track         |     📋 API Integration Hub     |
+|         🖼️ Image Track         |        ⌨️ Text Triage Track          |     📋 API Integration Hub     |
 | :----------------------------: | :----------------------------------: | :----------------------------: |
 | Upload a dental photo or X-ray | Type or record a complaint in Arabic | Full interactive REST API docs |
 |    → disease classification    |        → Arabic NLP analysis         |        → curl examples         |
@@ -511,17 +515,19 @@ _Every request passes through five independent layers before inference ever runs
 | :---------: | :---------------------------- | :-------------------------------------------------------------------- |
 | **PRIVACY** | Haar-Cascade face detection   | Identifiable patient faces — rejected before any model sees the image |
 | **DOMAIN**  | MobileNetV2 binary classifier | Non-dental images — eliminated pre-inference, zero wasted compute     |
-| **PAYLOAD** | FastAPI middleware validation | Malformed files, oversized audio (> 5 MB), invalid formats            |
+| **PAYLOAD** | FastAPI middleware validation | Malformed files, oversized images (> 5 MB), invalid formats           |
 | **MEMORY**  | `io.BytesIO` — zero disk I/O  | Patient image data never touches the filesystem                       |
 | **FORMAT**  | Deep content-type inspection  | Malicious file-type spoofing (e.g., `.exe` renamed `.jpg`)            |
 
 <br>
 
-_Stage 1 domain gate — binary classifier results (498 non-dental images correctly rejected, 773 dental images correctly passed, **zero false positives in either direction**):_
+_Stage 1 domain gate — binary classifier results on the held-out test set (support: 498 non-dental, 785 dental images):_
 
 <div align="center">
 <img src="reports/figures/stage1_confusion_matrix.png" width="55%" alt="Stage 1 Security Guard — Confusion Matrix" style="border-radius:10px;" />
 </div>
+
+<sub>98% overall accuracy — Not_Teeth: 0.96 precision / 1.00 recall · Teeth: 1.00 precision / 0.97 recall. The small remaining error rate is exactly why Stage 1 is one layer among five, not the only line of defense.</sub>
 
 <br>
 
@@ -533,7 +539,7 @@ _Stage 1 domain gate — binary classifier results (498 non-dental images correc
 
 |                                             🏥 University Clinics                                             |                                            🎓 Dental Education                                             |                                       🧑‍⚕️ Remote Pre-Screening                                       |
 | :-----------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------: |
-| AI-powered pre-screening and smart case routing before patients arrive — reducing wait times by up to **70%** | Intelligent case-to-student matching for graduation requirements across Endo, Perio, and Surgery rotations | Accessible triage for patients in underserved areas — a photo and a voice note is all that's needed |
+| AI-powered pre-screening and smart case routing before patients arrive — reducing wait times by up to **70%** | Intelligent case-to-student matching for graduation requirements across Endo, Perio, and Surgery rotations | Accessible triage for patients in underserved areas — a photo or a typed complaint is all that's needed |
 
 <br>
 
@@ -550,7 +556,7 @@ _Stage 1 domain gate — binary classifier results (498 non-dental images correc
 | 🏥 Unnecessary Walk-ins          |   Significantly reduced   |
 | 🎓 Student Case Matching         |      Fully automated      |
 | 📊 ROC-AUC Mean Macro            |        **0.9977**         |
-| 🔒 False Positives (Domain Gate) |         **Zero**          |
+| 🔒 Domain Gate Accuracy          |          **98%**          |
 
 <br>
 
@@ -653,7 +659,13 @@ Swagger UI →  http://127.0.0.1:8000/docs
 docker build -t healthy-smile-ai .
 
 # Run with environment variables
-docker run -p 8000:8000 -p 8501:8501 --env-file .env healthy-smile-ai
+# start.sh launches FastAPI internally (port 8000, not exposed) AND the
+# Streamlit dashboard on the single public port HF Spaces / this image expects.
+docker run -p 7860:7860 --env-file .env healthy-smile-ai
+```
+
+```
+Dashboard  →  http://localhost:7860
 ```
 
 > ⚠️ Add `.env` and `models/` to `.gitignore` — never commit API keys or model weights.
@@ -669,59 +681,52 @@ docker run -p 8000:8000 -p 8501:8501 --env-file .env healthy-smile-ai
 > 📖 Full interactive docs at `http://127.0.0.1:8000/docs` — test every endpoint directly in the browser with the built-in Swagger UI.
 
 <details>
-<summary><b><code>POST /analyze/</code></b> &nbsp;—&nbsp; Image Diagnosis + Grad-CAM Heatmap</summary>
+<summary><b><code>POST /analyze/</code></b> &nbsp;—&nbsp; Image Diagnosis + Grad-CAM++ Heatmap</summary>
 <br>
 
-Accepts a dental image (X-ray or clinical photo). Returns disease classification, per-class confidence scores, and a base64-encoded Grad-CAM++ heatmap.
+Accepts a dental image (X-ray or clinical photo) plus optional patient history fields. Runs the 3-stage vision pipeline and returns a unified structured report (same schema as `/triage-symptoms/`, so both surfaces render with one function). The Grad-CAM++ heatmap itself is generated client-side by the dashboard, not embedded in this response.
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/analyze/" \
   -H "accept: application/json" \
   -F "file=@patient_tooth.jpg" \
-  -F "pain_duration=اسبوع الى شهر" \
+  -F "pain_duration=أسبوع إلى شهر" \
   -F "chronic_diseases=مرض السكري"
 ```
 
 ```json
 {
-  "status": "success",
-  "prediction": "Caries",
-  "confidence": 0.94,
-  "all_scores": {
-    "Dental_Caries": 0.94,
-    "Hypodontia": 0.02,
-    "Mouth_Ulcer": 0.01,
-    "Periodontal_Disease": 0.02,
-    "Tooth_Discoloration": 0.01
+  "document_info": {
+    "medical_file_number": "DM-IMG-1234567890",
+    "issue_date": "2026-07-04 18:00:00",
+    "report_source": "المنصة الذكية للتحليل البصري - DentMatch AI"
   },
-  "heatmap_base64": "...",
-  "model_stage": "EfficientNetB4"
+  "symptoms_and_history": {
+    "recorded_pain_duration": "أسبوع إلى شهر",
+    "chronic_diseases": "مرض السكري"
+  },
+  "initial_medical_assessment": {
+    "case_classification": "Dental Caries - تسوس في الأسنان",
+    "ai_diagnosis": "تسوس في الأسنان — يحتاج إلى تدخل وعمل حشو...",
+    "specialized_university_department": "قسم الحشوات التجميلية والتحفظية",
+    "case_priority_level": "يحتاج فحص وتدخل طبي 🟡"
+  },
+  "care_and_referral_plan": {
+    "next_steps": "سيتم عرض حالتك على طلاب التخرج..."
+  },
+  "legal_disclaimer": "هذا التقرير استرشادي صادر آلياً..."
 }
 ```
+
+> Pass `include_internal=true` (form field) to also receive an `_internal` block with `confidence_score`, `stages_passed`, and `disease_probabilities` — used by the dashboard, optional for external API consumers.
 
 </details>
 
 <details>
-<summary><b><code>POST /triage-audio/</code></b> &nbsp;—&nbsp; Arabic Voice Triage</summary>
+<summary><b><code>POST /triage-audio/</code></b> &nbsp;—&nbsp; Arabic Voice Triage &nbsp;<sub>🗓️ Planned — not yet implemented</sub></summary>
 <br>
 
-Accepts a patient audio complaint (MP3/WAV/M4A). Transcribes, extracts clinical data, returns structured routing decision.
-
-```bash
-curl -X POST http://127.0.0.1:8000/triage-audio/ \
-  -F "file=@complaint.mp3"
-```
-
-```json
-{
-  "transcript": "عندي ألم شديد في سني من 3 أيام وعندي سكر",
-  "department": "Endodontics",
-  "urgency": "High",
-  "chronic_conditions": ["Diabetes"],
-  "pain_duration": "3 days",
-  "recommended_level": "Postgraduate Student"
-}
-```
+Not available yet. Full Arabic ASR-based voice triage is tracked in the [Roadmap](#-roadmap) below; only `/analyze/` and `/triage-symptoms/` are live today.
 
 </details>
 
@@ -729,23 +734,39 @@ curl -X POST http://127.0.0.1:8000/triage-audio/ \
 <summary><b><code>POST /triage-symptoms/</code></b> &nbsp;—&nbsp; Text Triage (Egyptian Arabic)</summary>
 <br>
 
-Accepts typed complaint in Egyptian Arabic. Returns structured routing report with department assignment and urgency classification.
+Accepts typed complaint in Egyptian Arabic. Uses Gemini 2.5 Flash to route the case to the correct university department. Returns the **same unified report schema** as `/analyze/` above, so both endpoints can be consumed by identical client-side rendering logic.
 
 ```bash
-curl -X POST http://127.0.0.1:8000/triage-symptoms/ \
+curl -X POST "http://127.0.0.1:8000/triage-symptoms/" \
   -H "Content-Type: application/json" \
-  -d '{"symptoms_description": "عندي ألم شديد في ضرسي بقاله اسبوع"}'
+  -d '{"symptoms_description": "عندي ألم شديد في ضرسي بقاله أسبوع"}'
 ```
 
 ```json
 {
-  "department": "Periodontology",
-  "urgency": "Medium",
-  "extracted_symptoms": ["gum pain", "bleeding on brushing"],
-  "duration": "1 week",
-  "recommended_level": "Undergraduate Student"
+  "document_info": {
+    "medical_file_number": "DM-TXT-1234567890",
+    "issue_date": "2026-07-04 18:00:00",
+    "report_source": "المنصة الذكية للفرز الطبي - DentMatch AI"
+  },
+  "symptoms_and_history": {
+    "recorded_pain_duration": "أسبوع",
+    "chronic_diseases": "لا يوجد"
+  },
+  "initial_medical_assessment": {
+    "case_classification": "Dental Caries - تسوس في الأسنان",
+    "ai_diagnosis": "تشخيص مبدئي بالعامية المصرية...",
+    "specialized_university_department": "قسم الحشوات التجميلية والتحفظية",
+    "case_priority_level": "يحتاج فحص وتدخل طبي 🟡"
+  },
+  "care_and_referral_plan": {
+    "next_steps": "سيتم عرض حالتك على طلاب القسم المختص..."
+  },
+  "legal_disclaimer": "هذا التقرير استرشادي صادر آلياً..."
 }
 ```
+
+> Special routing states `Needs_Clarification` and `Out_of_Domain` are returned in the `_llm_meta.target_department_eng` field (visible with `include_internal: true`) when the complaint is too vague or unrelated to dentistry.
 
 </details>
 
@@ -765,6 +786,7 @@ Healthy-Smile-AI/
 ├── 📄  start.sh                      ← One-command launcher
 ├── 📄  requirements.txt
 ├── 📄  Dockerfile
+├── 📄  .dockerignore
 ├── 📄  .env.example
 │
 ├── 📁  deployment/
@@ -774,9 +796,10 @@ Healthy-Smile-AI/
 ├── 📁  src/
 │   ├── clean_data.py                 ← Dataset preprocessing & augmentation
 │   ├── stage1_train.py               ← MobileNetV2 training (domain gate)
-│   ├── train_stage3.py               ← EfficientNetB4 fine-tuning (disease classifier)
+│   ├── stage1_evaluation.py          ← Stage 1 confusion matrix & report
 │   ├── stage1_inference.py
 │   ├── stage2_assessment.py
+│   ├── train_stage3.py               ← EfficientNetB4 fine-tuning (disease classifier)
 │   └── stage3_evaluation.py
 │
 ├── 📁  models/
@@ -790,7 +813,7 @@ Healthy-Smile-AI/
 │   └── test_samples/
 │
 ├── 📁  reports/
-│   ├── training/                     ← Training curves & loss logs
+│   ├── training_Stage3/              ← Training curves & loss logs
 │   └── figures/                      ← Confusion matrix · ROC · t-SNE · Grad-CAM
 │
 └── 📁  .streamlit/

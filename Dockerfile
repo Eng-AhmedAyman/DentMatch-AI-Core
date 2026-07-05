@@ -33,5 +33,7 @@ RUN chmod +x start.sh
 # HuggingFace Spaces requires port 7860
 EXPOSE 7860
 
-# Run FastAPI directly on the public port
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]
+# Run start.sh — launches FastAPI internally (port 8000) AND the
+# Streamlit dashboard on the public port (7860). Running uvicorn alone
+# here would skip the dashboard entirely.
+CMD ["./start.sh"]

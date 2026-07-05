@@ -1,17 +1,24 @@
 """
 ==============================================================================
 FILE: stage3_evaluation.py
-VERSION: 2.1.0  — Full evaluation suite
+VERSION: 2.2.0  — Full evaluation suite
 FIXES:
     - plot_gradcam defined BEFORE __main__ block (was causing NameError)
     - t-SNE restored to match original quality (larger dots, clearer clusters,
       rescale=1/255, perplexity=30, better palette matching notebook output)
-GENERATES:
-    reports/figures/stage3_confusion_matrix.png
-    reports/figures/stage3_roc_auc.png
-    reports/figures/stage3_tsne.png
-    reports/figures/stage3_confidence_plot.png
-    reports/figures/stage3_gradcam.png
+    - Output filenames now match exactly what app.py's Analytics tab reads
+      (previously saved as stage3_*.png, which the dashboard never displayed —
+      re-running this script silently produced orphan files instead of
+      updating the dashboard's figures).
+    - Added plot_predictions_grid(): app.py displays predictions_grid.png but
+      no script previously generated it.
+GENERATES (all in reports/figures/ — same names app.py's Analytics tab reads):
+    reports/figures/confusion_matrix.png
+    reports/figures/roc_curves.png
+    reports/figures/tsne.png
+    reports/figures/confidence_plot.png
+    reports/figures/gradcam.png
+    reports/figures/predictions_grid.png
 USAGE:
     python src/stage3_evaluation.py
 ==============================================================================
@@ -143,7 +150,7 @@ def plot_confusion_matrix(y_true, y_pred, CLASS_NAMES):
     plt.xticks(rotation=45, ha="right", fontsize=11)
     plt.yticks(rotation=0, fontsize=11)
     plt.tight_layout()
-    path = os.path.join(OUT_DIR, "stage3_confusion_matrix.png")
+    path = os.path.join(OUT_DIR, "confusion_matrix.png")
     plt.savefig(path, dpi=300)
     plt.close()
     print(f"✅ Saved → {path}")
@@ -171,7 +178,7 @@ def plot_roc_auc(y_true, predictions, CLASS_NAMES, NUM_CLASSES):
         ax.set_ylim([0, 1.02])
         ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    path = os.path.join(OUT_DIR, "stage3_roc_auc.png")
+    path = os.path.join(OUT_DIR, "roc_curves.png")
     plt.savefig(path, dpi=300, bbox_inches="tight")
     plt.close()
     mean_auc = roc_auc_score(y_onehot, predictions, average="macro")
@@ -253,7 +260,7 @@ def plot_tsne(model, y_true, CLASS_NAMES):
     )
     ax.grid(True, alpha=0.25, linestyle="--")
     plt.tight_layout()
-    path = os.path.join(OUT_DIR, "stage3_tsne.png")
+    path = os.path.join(OUT_DIR, "tsne.png")
     plt.savefig(path, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"✅ Saved → {path}")
@@ -314,7 +321,7 @@ def plot_confidence(predictions, y_pred, y_true, CLASS_NAMES):
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    path = os.path.join(OUT_DIR, "stage3_confidence_plot.png")
+    path = os.path.join(OUT_DIR, "confidence_plot.png")
     plt.savefig(path, dpi=300)
     plt.close()
     print(f"✅ Saved → {path}")
@@ -412,7 +419,67 @@ def plot_gradcam(model, y_true, CLASS_NAMES):
         axes[row, 2].axis("off")
 
     plt.tight_layout()
-    path = os.path.join(OUT_DIR, "stage3_gradcam.png")
+    path = os.path.join(OUT_DIR, "gradcam.png")
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"✅ Saved → {path}")
+
+
+def plot_predictions_grid(model, CLASS_NAMES, n_samples=16):
+    """
+    Saves a grid of random test-set predictions (image + true vs. predicted
+    label, colour-coded green/red for correct/incorrect) to
+    reports/figures/predictions_grid.png.
+
+    Added because app.py's Analytics tab displays this file, but no script
+    previously generated it — it existed only as a manually-created artifact.
+    """
+    print("🖼️  Predictions Grid...")
+
+    gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1.0 / 255)
+    vis_gen = gen.flow_from_directory(
+        TEST_DIR,
+        target_size=(224, 224),
+        batch_size=1,
+        class_mode="categorical",
+        classes=CLASS_NAMES,
+        shuffle=True,
+        seed=7,
+    )
+
+    cols = 4
+    rows = int(np.ceil(n_samples / cols))
+    fig, axes = plt.subplots(rows, cols, figsize=(4 * cols, 4 * rows))
+    axes = axes.flatten()
+
+    for i in range(n_samples):
+        img_batch, label_batch = next(vis_gen)
+        true_idx = int(np.argmax(label_batch[0]))
+        pred_probs = model.predict(img_batch, verbose=0)[0]
+        pred_idx = int(np.argmax(pred_probs))
+        confidence = float(pred_probs[pred_idx] * 100)
+        correct = pred_idx == true_idx
+
+        axes[i].imshow(img_batch[0])
+        axes[i].axis("off")
+        color = "green" if correct else "red"
+        axes[i].set_title(
+            f"True: {CLASS_NAMES[true_idx]}\n"
+            f"Pred: {CLASS_NAMES[pred_idx]} ({confidence:.0f}%)",
+            fontsize=9,
+            color=color,
+        )
+
+    for j in range(n_samples, len(axes)):
+        axes[j].axis("off")
+
+    fig.suptitle(
+        "Stage 3 — Sample Predictions (random test-set batch)",
+        fontsize=14,
+        fontweight="bold",
+    )
+    plt.tight_layout()
+    path = os.path.join(OUT_DIR, "predictions_grid.png")
     plt.savefig(path, dpi=200, bbox_inches="tight")
     plt.close()
     print(f"✅ Saved → {path}")
@@ -430,6 +497,7 @@ if __name__ == "__main__":
     plot_confidence(predictions, y_pred, y_true, CLASS_NAMES)
     plot_tsne(model, y_true, CLASS_NAMES)
     plot_gradcam(model, y_true, CLASS_NAMES)
+    plot_predictions_grid(model, CLASS_NAMES)
 
     print("\n" + "=" * 60)
     print("🎉 All figures saved to:")

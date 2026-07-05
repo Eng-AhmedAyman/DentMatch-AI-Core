@@ -25,7 +25,8 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
 # Dynamically point to the model
-MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "stage1_mobilenet.keras")
+# NOTE: path MUST match STAGE1_PATH in deployment/master_pipeline.py
+MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "stage1", "stage1_mobilenet.keras")
 
 # Create a structured directory for logs
 LOG_DIR = os.path.join(PROJECT_ROOT, "reports", "logs")
@@ -66,8 +67,11 @@ def analyze_image(img_path):
     Executes the 4-step filtering pipeline:
     1. Integrity: Checks file existence.
     2. Pre-processing: Normalizes lighting using CLAHE.
-    3. Privacy Guardrail: Detects faces to prevent processing sensitive data.
-    4. Inference: Predicts using CNN with strict thresholding.
+    3. Privacy Guardrail: Detects faces BEFORE inference — a detected face
+       short-circuits immediately, regardless of dental-structure confidence
+       (matches the priority order in deployment/master_pipeline.py).
+    4. Inference: Predicts using CNN with strict thresholding, on the SAME
+       CLAHE-enhanced image produced in step 2 (not a second raw re-read).
     """
     try:
         if not os.path.exists(img_path):
@@ -83,15 +87,21 @@ def analyze_image(img_path):
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
         cl = clahe.apply(l)
         img_cv_enhanced = cv2.merge((cl, a, b))
-        img_cv = cv2.cvtColor(img_cv_enhanced, cv2.COLOR_LAB2BGR)
+        img_cv_enhanced = cv2.cvtColor(img_cv_enhanced, cv2.COLOR_LAB2BGR)
 
-        # --- Step 2: Privacy Guardrail (Face Detection) ---
-        gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+        # --- Step 2: Privacy Guardrail (Face Detection) — runs FIRST ---
+        gray = cv2.cvtColor(img_cv_enhanced, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-        # --- Step 3: CNN Inference ---
-        img_prep = image.load_img(img_path, target_size=(224, 224))
-        arr = np.expand_dims(image.img_to_array(img_prep) / 255.0, axis=0)
+        if len(faces) > 0:
+            status = "REJECTED: Privacy Alert (Face Detected)"
+            log_action(os.path.basename(img_path), status, 0.0)
+            return status, 0.0
+
+        # --- Step 3: CNN Inference (on the CLAHE-enhanced image) ---
+        img_rgb = cv2.cvtColor(img_cv_enhanced, cv2.COLOR_BGR2RGB)
+        img_resized = cv2.resize(img_rgb, (224, 224))
+        arr = np.expand_dims(img_resized.astype("float32") / 255.0, axis=0)
         pred = model.predict(arr, verbose=0)[0][0]
 
         # --- Step 4: Adaptive Decision Logic ---
@@ -99,8 +109,6 @@ def analyze_image(img_path):
 
         if pred >= SECURITY_THRESHOLD:
             status = "ACCEPTED: Valid Dental Image"
-        elif len(faces) > 0:
-            status = "REJECTED: Privacy Alert (Face Detected)"
         else:
             status = "REJECTED: Invalid Structure (Not Teeth)"
 

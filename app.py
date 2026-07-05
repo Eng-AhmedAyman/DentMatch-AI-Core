@@ -509,7 +509,7 @@ setInterval(fixBtn, 400);
 # ==============================================================================
 # ZONE 4: CONSTANTS
 # ==============================================================================
-API_BASE_URL: str = "https://eng-ahmedayman10-healthysmile-ai.hf.space"
+API_BASE_URL: str = "http://127.0.0.1:8000"
 ANALYZE_ENDPOINT: str = f"{API_BASE_URL}/analyze/"
 TRIAGE_ENDPOINT: str = f"{API_BASE_URL}/triage-symptoms/"
 

@@ -26,7 +26,8 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
 # Dynamically point to Model, Test Data, and Output folders
-MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "stage1_mobilenet.keras")
+# NOTE: path MUST match STAGE1_PATH in deployment/master_pipeline.py
+MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "stage1", "stage1_mobilenet.keras")
 TEST_DIR = os.path.join(PROJECT_ROOT, "data", "stage1_binary", "test")
 
 # Save outputs to the structured reports folder

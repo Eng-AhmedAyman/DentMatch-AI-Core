@@ -1,0 +1,52 @@
+# ==============================================================================
+# .dockerignore — HealthySmile AI Core
+# Keeps the Docker build context small and, most importantly, makes sure
+# secrets never get baked into an image layer.
+#
+# NOTE: models/stage1, models/stage2, models/stage3 and reports/figures are
+# intentionally NOT listed here — they are required at runtime (the models
+# by deployment/master_pipeline.py, the figures by the Analytics tab in
+# app.py) and are already present directly in this Space.
+# ==============================================================================
+
+# 1. Secrets — never bake these into an image layer
+.env
+.env.local
+secrets.toml
+
+# 2. Raw / intermediate training datasets — only needed by src/*.py training
+#    scripts, never by api.py or app.py at runtime
+data/raw/
+data/stage1_binary/
+data/stage3_disease/
+
+# 3. Training notebook — not imported by the running app
+notebooks/
+
+# 4. Git metadata
+.git/
+.gitignore
+.gitattributes
+
+# 5. Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# 6. Jupyter checkpoints
+.ipynb_checkpoints/
+
+# 7. Virtual environments
+venv/
+env/
+.conda/
+
+# 8. OS & editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 9. Logs
+*.log

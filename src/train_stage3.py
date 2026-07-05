@@ -50,7 +50,8 @@ DEPENDENCIES:
     tensorflow>=2.12, scikit-learn, matplotlib, numpy, Pillow
 
 AUTHOR: Eng. Ahmed Ayman — AI & Data Science Engineer
-VERSION: 1.0.0
+VERSION: 1.1.0  (added real MixUp implementation — ZONE 6B — to match the
+                 augmentation strategy already described above)
 ==============================================================================
 """
 
@@ -100,7 +101,7 @@ VAL_DIR = os.path.join(DATA_DIR, "val")
 OUTPUT_MODEL = os.path.join(
     PROJECT_ROOT, "models", "stage3", "stage3_efficientnet_finetuned_best.keras"
 )
-REPORTS_DIR = os.path.join(PROJECT_ROOT, "reports", "training")
+REPORTS_DIR = os.path.join(PROJECT_ROOT, "reports", "training_Stage3")
 
 # --- Dataset ---
 # Set True if you have ONE folder with all images (no train/val split yet).
@@ -124,6 +125,9 @@ PHASE2_LR = 1e-5  # Must be much smaller than Phase 1
 # --- Regularisation ---
 DROPOUT_RATE = 0.4
 LABEL_SMOOTHING = 0.1  # Prevents overconfident wrong predictions
+MIXUP_ALPHA = 0.2  # Beta-distribution shape; low value keeps mixed images
+                    # close to one of the two originals (safer for medical
+                    # imagery than a 50/50 blend — see ZONE 6B).
 
 # --- Class names — ORDER MUST MATCH folder names exactly ---
 CLASS_NAMES = [
@@ -203,14 +207,67 @@ augmentation = tf.keras.Sequential(
 )
 
 
+# ==============================================================================
+# ZONE 6B: MIXUP AUGMENTATION
+# Blends pairs of images (and their one-hot labels) within each batch using a
+# Beta(alpha, alpha) mixing coefficient. Implemented via two Gamma samples
+# (X/(X+Y) ~ Beta(alpha, alpha)) so no tensorflow_probability dependency is
+# required.
+#
+# MIXUP_ALPHA is kept low (0.2) on purpose: with small alpha, the Beta
+# distribution is heavily skewed toward 0 or 1, so most mixed images stay
+# close to one of the two originals rather than a visually implausible
+# 50/50 blend — an important caution for medical imagery, where an
+# unrealistic blended lesion could teach the model the wrong features.
+# ==============================================================================
+
+
+def _sample_beta(batch_size: int, alpha: float) -> tf.Tensor:
+    """Sample from Beta(alpha, alpha) via two Gamma(alpha, 1) draws."""
+    gamma_1 = tf.random.gamma(shape=[batch_size], alpha=alpha)
+    gamma_2 = tf.random.gamma(shape=[batch_size], alpha=alpha)
+    return gamma_1 / (gamma_1 + gamma_2)
+
+
+def mixup(images: tf.Tensor, labels: tf.Tensor, alpha: float = MIXUP_ALPHA):
+    """
+    Apply MixUp to a batch of (already-augmented) images and one-hot labels.
+
+    Args:
+        images (tf.Tensor): Shape (B, H, W, 3), float32.
+        labels (tf.Tensor): Shape (B, NUM_CLASSES), one-hot/categorical.
+        alpha (float): Beta distribution shape parameter.
+
+    Returns:
+        (tf.Tensor, tf.Tensor): Mixed images and mixed (soft) labels, same
+        shapes as the inputs.
+    """
+    batch_size = tf.shape(images)[0]
+    lam = _sample_beta(batch_size, alpha)
+
+    # Shuffle the batch to pick a mixing partner for every sample
+    shuffled_idx = tf.random.shuffle(tf.range(batch_size))
+    images_shuffled = tf.gather(images, shuffled_idx)
+    labels_shuffled = tf.gather(labels, shuffled_idx)
+
+    lam_img = tf.reshape(lam, [batch_size, 1, 1, 1])
+    lam_lbl = tf.reshape(lam, [batch_size, 1])
+
+    mixed_images = lam_img * images + (1.0 - lam_img) * images_shuffled
+    mixed_labels = lam_lbl * labels + (1.0 - lam_lbl) * labels_shuffled
+
+    return mixed_images, mixed_labels
+
+
 def load_train_dataset() -> tf.data.Dataset:
     """
     Build an augmented, shuffled training dataset from TRAIN_DIR.
 
-    Applies the augmentation pipeline and prefetch for GPU overlap.
+    Applies the standard augmentation pipeline, then MixUp (see ZONE 6B),
+    and prefetch for GPU overlap.
 
     Returns:
-        tf.data.Dataset: Batched and prefetched (images, one-hot-labels).
+        tf.data.Dataset: Batched and prefetched (images, soft one-hot-labels).
     """
     ds = tf.keras.utils.image_dataset_from_directory(
         TRAIN_DIR,
@@ -223,6 +280,10 @@ def load_train_dataset() -> tf.data.Dataset:
     )
     ds = ds.map(
         lambda x, y: (augmentation(x, training=True), y),
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
+    ds = ds.map(
+        lambda x, y: mixup(x, y, alpha=MIXUP_ALPHA),
         num_parallel_calls=tf.data.AUTOTUNE,
     )
     return ds.prefetch(tf.data.AUTOTUNE)
