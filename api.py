@@ -219,6 +219,15 @@ def _dept_to_diagnosis_info(dept_eng: str) -> dict:
     return DIAGNOSIS_MAP.get(key, DIAGNOSIS_MAP["Healthy"])
 
 
+# Fixed, hand-written apology for complaints unrelated to dentistry — see
+# usage in triage_patient_symptoms() for why this isn't LLM-generated.
+OUT_OF_SCOPE_MESSAGE: str = (
+    "شكرًا على تواصلك معنا. منصة DentMatch AI متخصصة في تقييم مشاكل الأسنان "
+    "واللثة فقط، وشكواك دي مش متعلقة بالأسنان على ما يبدو، فننصحك تتوجه "
+    "لطبيب التخصص المناسب لحالتك عشان تاخد التقييم والرعاية الصح."
+)
+
+
 # ==============================================================================
 # ZONE 3: CONFIGURATION & SECURITY
 # ==============================================================================
@@ -565,12 +574,9 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
     (مثل: ألم ركبة، صداع، مشكلة في المعدة، سؤال عام، دردشة)؟
 
     - إذا كانت الشكوى لا علاقة لها بطب الأسنان إطلاقًا:
-      أرجع فقط الحقلين التاليين ولا شيء غيرهما (توفيرًا للمعالجة):
+      أرجع فقط الحقل التالي ولا شيء غيره (توفيرًا للمعالجة):
       {{
-        "is_out_of_scope": true,
-        "message": "اعتذار قصير بالعامية المصرية (سطر أو سطرين) يوضح أن هذه المنصة
-                     مخصصة لطب الأسنان فقط وأن شكواه تبدو غير متعلقة بذلك،
-                     وينصحه بمراجعة التخصص الطبي المناسب."
+        "is_out_of_scope": true
       }}
       توقف هنا ولا تكمل باقي الحقول أدناه إطلاقًا.
 
@@ -681,10 +687,12 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
             status_code=200,
             content={
                 "status": "out_of_scope",
-                "message": data.get(
-                    "message",
-                    "الشكوى دي مش متعلقة بطب الأسنان. يرجى مراجعة التخصص الطبي المناسب.",
-                ),
+                # Fixed, hand-written message instead of an LLM-generated one —
+                # guarantees consistent, natural phrasing every time (the LLM's
+                # own phrasing varied in quality call-to-call), avoids it
+                # guessing a specific medical specialty that might be wrong,
+                # and saves the output tokens it would've spent writing this.
+                "message": OUT_OF_SCOPE_MESSAGE,
             },
         )
 
