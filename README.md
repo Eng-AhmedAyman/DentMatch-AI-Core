@@ -644,22 +644,22 @@ pip install -r requirements.txt
 cp .env.example .env
 # → Open .env and add your GEMINI_API_KEY
 
-# 4a. Just want the dashboard? It defaults to calling the deployed public API:
-streamlit run app.py
+# 4. Run both — app.py defaults to a local API, so it needs a local
+#    uvicorn instance running alongside it (Terminal 1 + Terminal 2):
 
-# 4b. Want to test against your OWN local API instead? Run both:
 # Terminal 1 — AI Backend
 uvicorn api:app --reload --host 127.0.0.1 --port 8000
 
-# Terminal 2 — Dashboard, pointed at the local API
-set API_BASE_URL=http://127.0.0.1:8000     # Windows — use `export` on macOS/Linux
+# Terminal 2 — Dashboard (defaults to calling the local API above)
 streamlit run app.py
 ```
 
 ```
 Dashboard  →  http://localhost:7860
-Swagger UI →  http://127.0.0.1:8000/docs   (only reachable if you ran step 4b)
+Swagger UI →  http://127.0.0.1:8000/docs
 ```
+
+> Want to test the dashboard against the deployed production API instead of your own local one? Set an environment variable first: `set API_BASE_URL=https://eng-ahmedayman10-healthysmile-ai.hf.space` (Windows — use `export` on macOS/Linux), then just run `streamlit run app.py` alone (no local API needed).
 
 <br>
 
@@ -680,10 +680,11 @@ docker run -p 7860:7860 --env-file .env healthy-smile-ai
 API + interactive docs  →  http://localhost:7860/docs
 ```
 
-> To also run the Streamlit dashboard locally against this API, run
-> `streamlit run app.py` in a second terminal — it defaults to calling the
-> deployed public API, or set `API_BASE_URL=http://127.0.0.1:8000` to point
-> it at a local `uvicorn api:app` instance instead.
+> To also run the Streamlit dashboard against this containerized API, set
+> `API_BASE_URL=http://127.0.0.1:7860` (matching the port mapped above) before
+> running `streamlit run app.py` in a second terminal. For local development
+> without Docker, see the plain `uvicorn` + `streamlit` flow in
+> [Getting Started](#-getting-started) instead — it's simpler for iterating on code.
 
 > ⚠️ Add `.env` and `models/` to `.gitignore` — never commit API keys or model weights.
 

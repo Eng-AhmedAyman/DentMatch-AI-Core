@@ -510,15 +510,15 @@ setInterval(fixBtn, 400);
 # ==============================================================================
 # ZONE 4: CONSTANTS
 # ==============================================================================
-# Defaults to the deployed public API on Hugging Face — this is what's
-# actually reachable, since the Space's Docker image runs FastAPI directly
-# on the public port (colleagues call /analyze/, /triage-symptoms/, /docs
-# on this URL). Override with an environment variable only if you're running
-# BOTH api.py and app.py together on your own machine via start.sh, e.g.:
-#   set API_BASE_URL=http://127.0.0.1:8000
-API_BASE_URL: str = os.environ.get(
-    "API_BASE_URL", "https://eng-ahmedayman10-healthysmile-ai.hf.space"
-)
+# Defaults to a locally-running FastAPI backend — app.py isn't deployed
+# anywhere yet (the HF Space's Docker image only runs api.py directly on the
+# public port for colleagues), so this file is purely a local dev/testing
+# tool right now. Defaulting to local avoids extra network latency and
+# avoids competing with colleagues for the shared Space's compute.
+# Override with an environment variable if you want to test against the
+# deployed production API instead, e.g.:
+#   set API_BASE_URL=https://eng-ahmedayman10-healthysmile-ai.hf.space
+API_BASE_URL: str = os.environ.get("API_BASE_URL", "http://127.0.0.1:8000")
 ANALYZE_ENDPOINT: str = f"{API_BASE_URL}/analyze/"
 TRIAGE_ENDPOINT: str = f"{API_BASE_URL}/triage-symptoms/"
 
