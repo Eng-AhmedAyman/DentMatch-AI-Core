@@ -212,9 +212,15 @@ class DentalAI_System:
             print("⏳ Loading Stage 2 (Triage Doctor — Offline)...")
             from transformers import pipeline as hf_pipeline
 
-            self.stage2_triage = hf_pipeline(
-                "image-classification", model=STAGE2_PATH, framework="pt"
-            )
+            # NOTE: framework="pt" removed on purpose — newer transformers
+            # versions changed how this kwarg is forwarded internally, causing
+            # "ImageClassificationPipeline._sanitize_parameters() got an
+            # unexpected keyword argument 'framework'" on some installs.
+            # PyTorch is auto-detected anyway since models/stage2/ only
+            # contains pytorch_model.bin (no tf_model.h5), so dropping this
+            # argument is safe and makes the code robust across transformers
+            # versions instead of requiring an exact version pin.
+            self.stage2_triage = hf_pipeline("image-classification", model=STAGE2_PATH)
             print("   ✅ [STAGE 2 READY]")
 
             # ---- Stage 3: EfficientNetB4 Specialist ----
