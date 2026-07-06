@@ -145,8 +145,9 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
 
 ```
   INPUT  ──▶  Dental X-ray or clinical photo
-  GATE   ──▶  MobileNetV2  (domain safety check)
-  ENGINE ──▶  EfficientNetB4  (disease classifier)
+  GATE   ──▶  MobileNetV2  (Stage 1 — domain safety check)
+  TRIAGE ──▶  HF Vision Transformer  (Stage 2 — healthy vs. diseased)
+  ENGINE ──▶  EfficientNetB4  (Stage 3 — disease classifier)
   OUTPUT ──▶  Disease class + Grad-CAM++ heatmap
 ```
 
@@ -154,7 +155,7 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
 
 - Accepts X-rays and intraoral clinical photos
 - Rejects blurry, non-dental, or face-containing inputs via smart multi-layer gate
-- Classifies **6 oral disease categories** with per-class confidence scores
+- Classifies **5 oral disease categories** with per-class confidence scores
 - Generates **Grad-CAM++ heatmaps** — pixel-level lesion evidence overlaid on the original image
 - Medical-grade explainability on every single prediction, not just the top result
 
@@ -192,7 +193,7 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
 
 - Understands **Egyptian Arabic** natively — dialects, colloquialisms, and all
 - Extracts symptoms, pain duration, and chronic conditions automatically
-- Routes to the correct department: Endodontics · Surgery · Periodontology
+- Routes to the correct department across all **6 university clinics**: Endo · Operative · Perio · Fixed · Remove · Surgery
 - Outputs structured JSON — EHR-integration ready from day one
 - Powered by precision medical prompt engineering with clinical validation
 
@@ -233,14 +234,18 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
                │                  │  Dept Routing           │
         ┌──────▼──────────┐       │  Urgency Classification │
         │  STAGE 2        │       │  Structured JSON Report │
-        │  EfficientNetB4 │       └─────────────────────────┘
-        │  6-class Diag.  │
+        │  HF ViT         │       └─────────────────────────┘
+        │  Healthy vs.    │
+        │  Diseased       │
         └──────┬──────────┘
+        ✓ healthy → report as-is
+        ✗ diseased ↓
                │
         ┌──────▼──────────┐
         │  STAGE 3        │
-        │  Grad-CAM++     │
-        │  Lesion XAI     │
+        │  EfficientNetB4 │
+        │  5-class Diag.  │
+        │  + Grad-CAM++   │
         └──────┬──────────┘
                │
         ┌──────▼────────────────────────────────┐
@@ -257,14 +262,15 @@ A production-grade, multi-modal AI engine that handles the full triage workflow 
 | Stage | Model                | Role                                               |      Metric      |
 | :---: | :------------------- | :------------------------------------------------- | :--------------: |
 |  `G`  | **Haar-Cascade**     | Privacy guard — rejects identifiable patient faces |     **98%**      |
-| `S1`  | **MobileNetV2**      | Domain gatekeeper — blocks all non-dental inputs   |     **96%+**     |
-| `S2`  | **EfficientNetB4**   | Core diagnostic engine — 6 disease classes         | **96% weighted** |
-| `S3`  | **Grad-CAM++**       | Pixel-level lesion explainability                  |      ✦ XAI       |
+| `S1`  | **MobileNetV2**      | Domain gatekeeper — blocks all non-dental inputs   |     **98%**     |
+| `S2`  | **HF Vision Transformer** | Healthy vs. diseased triage (offline, pretrained) |      ✦ Triage       |
+| `S3`  | **EfficientNetB4**   | Core diagnostic engine — 5 disease classes         | **96% weighted** |
+| `XAI` | **Grad-CAM++**       | Pixel-level lesion explainability (Stage 3 output) |      ✦ XAI       |
 | `NLP` | **Gemini 2.5 Flash** | Symptom extraction + department routing            |      ✦ LLM       |
 
 ```
   Haar-Cascade   ·  Privacy Guard      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  98.0%   ✓
-  MobileNetV2    ·  Domain Gate        ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░  96.0%   ✓
+  MobileNetV2    ·  Domain Gate        ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  98.0%   ✓
   EfficientNetB4 ·  Core Diagnostic    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░  96.0%   ✓  ← weighted avg
   ROC-AUC Score  ·  Mean Macro         ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  99.77%  ✓
 ```
@@ -410,7 +416,7 @@ _The full dashboard runs three complete AI workflows in one interface:_
 
 |         🖼️ Image Track         |        ⌨️ Text Triage Track          |     📋 API Integration Hub     |
 | :----------------------------: | :----------------------------------: | :----------------------------: |
-| Upload a dental photo or X-ray | Type or record a complaint in Arabic | Full interactive REST API docs |
+| Upload a dental photo or X-ray | Type a complaint in Egyptian Arabic | Full interactive REST API docs |
 |    → disease classification    |        → Arabic NLP analysis         |        → curl examples         |
 | → per-class confidence scores  |         → symptom extraction         |       → Python snippets        |
 |  → Grad-CAM++ heatmap overlay  |         → department routing         |       → Open Swagger UI        |
@@ -433,7 +439,7 @@ _Tab 3 — FastAPI Integration Hub: ready-to-use curl and Python code for every 
 
 <br>
 
-> **Try it yourself** — run locally and access the full interactive dashboard at `http://localhost:8501`. Swagger UI at `http://127.0.0.1:8000/docs`.
+> **Try it yourself** — run locally and access the full interactive dashboard at `http://localhost:7860`. Swagger UI at `http://127.0.0.1:8000/docs`.
 
 <br>
 
@@ -447,7 +453,7 @@ _9 real model predictions from the held-out test set — all correctly classifie
 
 <div align="center">
 <img src="reports/figures/predictions_grid.png" width="90%" alt="Sample AI predictions — 9 disease classes with confidence scores" style="border-radius:10px;" />
-<br><sub>Dental Caries · Gingivitis · Tooth Discoloration · Calculus · Mouth Ulcer · Hypodontia — correctly identified at 97–100% confidence on unseen data.</sub>
+<br><sub>Dental Caries · Hypodontia · Mouth Ulcer · Periodontal Disease · Tooth Discoloration — correctly identified at 97–100% confidence on unseen data.</sub>
 </div>
 
 <br>
@@ -547,16 +553,16 @@ _Stage 1 domain gate — binary classifier results on the held-out test set (sup
 
 <br>
 
-## 📉 Measured Impact
+## 📉 Expected Impact
 
-| Metric                           |          Impact           |
+<sub>Projected operational benefits based on the system's design — not yet measured in a live clinical deployment.</sub>
+
+| Metric                           |          Expected Impact           |
 | :------------------------------- | :-----------------------: |
-| ⏱️ Triage Time per Patient       |    **~70% reduction**     |
-| 🎯 Routing Accuracy              | Consistent & fatigue-free |
-| 🏥 Unnecessary Walk-ins          |   Significantly reduced   |
+| ⏱️ Triage Time per Patient       |    **~70% reduction (projected)**     |
+| 🎯 Routing Consistency           | No fatigue-driven variability, unlike manual triage |
+| 🏥 Unnecessary Walk-ins          |   Expected to reduce via pre-screening   |
 | 🎓 Student Case Matching         |      Fully automated      |
-| 📊 ROC-AUC Mean Macro            |        **0.9977**         |
-| 🔒 Domain Gate Accuracy          |          **98%**          |
 
 <br>
 
@@ -574,8 +580,9 @@ _Stage 1 domain gate — binary classifier results on the held-out test set (sup
 
 ```
 Vision  ── TensorFlow / Keras
-            EfficientNetB4 (disease classification)
-            MobileNetV2    (domain gating)
+            EfficientNetB4 (Stage 3 — disease classification)
+            MobileNetV2    (Stage 1 — domain gating)
+            HuggingFace Transformers (Stage 2 — healthy/diseased triage)
             OpenCV         (image preprocessing)
             Grad-CAM++     (explainability)
             Haar-Cascade   (face/privacy detection)
@@ -594,7 +601,7 @@ NLP     ── Google Gemini 2.5 Flash
 ```
 Backend  ── FastAPI · Uvicorn · Pydantic v2
 Frontend ── Streamlit (3-tab dashboard)
-Deploy   ── Docker · ngrok
+Deploy   ── Docker · Hugging Face Spaces
 Runtime  ── Python 3.10+
 Security ── io.BytesIO (zero disk I/O)
             Content-type deep inspection
@@ -627,8 +634,8 @@ GEMINI_API_KEY  (free tier works — get one at aistudio.google.com)
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Eng-AhmedAyman/Healthy-Smile-AI.git
-cd Healthy-Smile-AI
+git clone https://github.com/Eng-AhmedAyman/DentMatch-AI-Core.git
+cd DentMatch-AI-Core
 
 # 2. Install dependencies
 pip install -r requirements.txt
@@ -637,17 +644,21 @@ pip install -r requirements.txt
 cp .env.example .env
 # → Open .env and add your GEMINI_API_KEY
 
-# 4. Launch (two terminals)
+# 4a. Just want the dashboard? It defaults to calling the deployed public API:
+streamlit run app.py
+
+# 4b. Want to test against your OWN local API instead? Run both:
 # Terminal 1 — AI Backend
 uvicorn api:app --reload --host 127.0.0.1 --port 8000
 
-# Terminal 2 — Dashboard
+# Terminal 2 — Dashboard, pointed at the local API
+set API_BASE_URL=http://127.0.0.1:8000     # Windows — use `export` on macOS/Linux
 streamlit run app.py
 ```
 
 ```
-Dashboard  →  http://localhost:8501
-Swagger UI →  http://127.0.0.1:8000/docs
+Dashboard  →  http://localhost:7860
+Swagger UI →  http://127.0.0.1:8000/docs   (only reachable if you ran step 4b)
 ```
 
 <br>
@@ -659,14 +670,20 @@ Swagger UI →  http://127.0.0.1:8000/docs
 docker build -t healthy-smile-ai .
 
 # Run with environment variables
-# start.sh launches FastAPI internally (port 8000, not exposed) AND the
-# Streamlit dashboard on the single public port HF Spaces / this image expects.
+# This image serves the FastAPI backend directly on the public port —
+# that's what's actually deployed on the HF Space, since it's called
+# directly (not through the Streamlit dashboard).
 docker run -p 7860:7860 --env-file .env healthy-smile-ai
 ```
 
 ```
-Dashboard  →  http://localhost:7860
+API + interactive docs  →  http://localhost:7860/docs
 ```
+
+> To also run the Streamlit dashboard locally against this API, run
+> `streamlit run app.py` in a second terminal — it defaults to calling the
+> deployed public API, or set `API_BASE_URL=http://127.0.0.1:8000` to point
+> it at a local `uvicorn api:app` instance instead.
 
 > ⚠️ Add `.env` and `models/` to `.gitignore` — never commit API keys or model weights.
 
@@ -766,7 +783,9 @@ curl -X POST "http://127.0.0.1:8000/triage-symptoms/" \
 }
 ```
 
-> Special routing states `Needs_Clarification` and `Out_of_Domain` are returned in the `_llm_meta.target_department_eng` field (visible with `include_internal: true`) when the complaint is too vague or unrelated to dentistry.
+> `Needs_Clarification` (complaint too vague) still returns the full report above, with `_llm_meta.target_department_eng` set accordingly (visible with `include_internal: true`) and `next_steps` asking for more detail.
+>
+> Complaints unrelated to dentistry short-circuit **before** the full report is built — the endpoint instead returns `{"status": "out_of_scope", "message": "..."}`, to avoid spending output tokens on report fields that don't apply and avoid mislabeling the complaint as a dental department.
 
 </details>
 

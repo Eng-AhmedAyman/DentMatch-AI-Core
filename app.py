@@ -1205,7 +1205,7 @@ text-align: center;
                             ANALYZE_ENDPOINT,
                             files=files,
                             data=payload_data,
-                            timeout=30,
+                            timeout=120,
                         )
                         if res.status_code == 200:
                             result = res.json()
@@ -1233,7 +1233,11 @@ text-align: center;
                         )
                         result = {}
                     except requests.exceptions.Timeout:
-                        st.error("❌ Request timed out.")
+                        st.error(
+                            "❌ الطلب أخد وقت أطول من المتوقع من غير رد. غالبًا الموديلات "
+                            "لسه بتحمّل (Cold Start) أو الـ Space شغال على معالج عادي (CPU) "
+                            "وده بياخد وقت أطول أول مرة. جرب تاني بعد دقيقة."
+                        )
                         result = {}
                     except Exception as exc:
                         st.error(f"❌ Unexpected error: {exc}")
@@ -1366,7 +1370,7 @@ margin-top: 8px;
                             "symptoms_description": user_symptoms,
                             "include_internal": True,
                         },
-                        timeout=30,
+                        timeout=60,
                     )
                     if res.status_code == 200:
                         triage_data = res.json()
@@ -1393,7 +1397,9 @@ margin-top: 8px;
                     st.error("❌ Failed to connect to the FastAPI backend.")
                     triage_data = {}
                 except requests.exceptions.Timeout:
-                    st.error("❌ Request timed out.")
+                    st.error(
+                        "❌ الطلب أخد وقت أطول من المتوقع من غير رد. جرب تاني بعد شوية."
+                    )
                     triage_data = {}
                 except Exception as exc:
                     st.error(f"❌ Unexpected error: {exc}")
