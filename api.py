@@ -7,8 +7,10 @@ DESCRIPTION:
     Exposes two primary inference endpoints:
 
         1. POST /analyze/
-           Image-based dental diagnosis via the 2-stage CNN deep-learning
-           pipeline.  Accepts optional form fields:
+           Image-based dental diagnosis via the 3-stage CNN deep-learning
+           pipeline (MobileNetV2 domain gate → HF ViT healthy/diseased
+           triage → EfficientNetB4 disease classifier). Accepts optional
+           form fields:
                - pain_duration    (str, default "غير محدد")
                - chronic_diseases (str, default "لا يوجد")
 
@@ -40,7 +42,7 @@ USAGE:
     ReDoc      : http://127.0.0.1:8000/redoc
 
 AUTHOR:  Eng. Ahmed Ayman — AI & Data Science Engineer
-VERSION: 2.1.0  (audit fix — unified report schema, duplicate-except removed)
+VERSION: 2.2.0  (out-of-scope short-circuit, error-message hardening, docstring fixes)
 ==============================================================================
 """
 
@@ -175,24 +177,6 @@ DIAGNOSIS_MAP: dict[str, dict] = {
         ),
         "priority": "حالة روتينية 🟢",
     },
-    "Out_of_Domain": {
-        # Distinct from "Healthy" — an out-of-domain complaint (e.g. knee pain)
-        # says nothing about the patient's dental health, so labelling it
-        # "Healthy" would be misleading. This entry is honest about what the
-        # system actually knows: nothing dental-related was described.
-        "ar_name": "Out of Scope - الشكوى خارج نطاق طب الأسنان",
-        "dept_eng": "N/A",
-        "dept_ar": "غير متعلق بطب الأسنان",
-        "ai_diagnosis": (
-            "هذه المنصة مخصصة لتقييم مشاكل الأسنان واللثة فقط. الشكوى الموصوفة "
-            "لا تبدو متعلقة بطب الأسنان."
-        ),
-        "action": (
-            "يرجى مراجعة التخصص الطبي المناسب لحالتك. لو كان لديك أيضاً أي شكوى "
-            "متعلقة بالأسنان، يسعدنا مساعدتك من خلال وصفها بشكل منفصل."
-        ),
-        "priority": "خارج النطاق ⚪",
-    },
 }
 
 # ==============================================================================
@@ -209,7 +193,6 @@ _DEPT_TO_DIAGNOSIS_KEY: dict[str, str] = {
     "Remove": "Hypodontia",  # تعويض متحرك → نقص أسنان
     "Surgery": "Dental_Caries",  # جراحة → تسوس/جذور
     "Needs_Clarification": "Healthy",  # fallback — no disease confirmed
-    "Out_of_Domain": "Out_of_Domain",  # not dental — honest label, not "Healthy"
 }
 
 
@@ -247,10 +230,10 @@ app = FastAPI(
     title="🦷 DentMatch AI Core API",
     description=(
         "Enterprise REST API for dental triage and deep-learning diagnostics. "
-        "Integrates a 2-stage CNN vision pipeline with a "
+        "Integrates a 3-stage CNN vision pipeline with a "
         "Gemini-powered LLM triage engine."
     ),
-    version="2.1.0",
+    version="2.2.0",
 )
 
 # CORS — allow all origins for development; tighten for production.
@@ -308,8 +291,9 @@ def _build_image_report(
     -------
     dict
         Unified structured report (JSON-serialisable).
-        Keys are Arabic strings matching the REPORT SCHEMA CONTRACT documented
-        in the module docstring.
+        Keys are English (document_info, symptoms_and_history, etc. — see the
+        module docstring's REPORT SCHEMA); most VALUES are Arabic strings for
+        direct display to the patient.
     """
     raw_diagnosis = raw_report.get("diagnosis") or "Healthy"
     # Graceful fallback — unknown labels map to the Healthy entry
@@ -498,10 +482,13 @@ async def analyze_dental_image(
         return JSONResponse(status_code=200, content=formatted_report)
 
     except Exception as exc:
-        print(f"❌ [/analyze/ ERROR] {exc}")
+        print(f"❌ [/analyze/ ERROR] {exc}")  # full detail stays server-side only
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "message": f"Internal server error: {exc}"},
+            content={
+                "status": "error",
+                "message": "حدث خطأ داخلي أثناء تحليل الصورة. يرجى المحاولة مرة أخرى.",
+            },
         )
 
 
@@ -664,17 +651,24 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
         data = json.loads(response_text)
 
     except json.JSONDecodeError as exc:
+        print(
+            f"❌ [/triage-symptoms/ JSON ERROR] {exc}"
+        )  # full detail server-side only
         return JSONResponse(
             status_code=500,
             content={
                 "status": "error",
-                "message": f"LLM returned invalid JSON: {exc}",
+                "message": "حدث خطأ أثناء معالجة رد الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
             },
         )
     except Exception as exc:
+        print(f"❌ [/triage-symptoms/ ERROR] {exc}")  # full detail server-side only
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "message": str(exc)},
+            content={
+                "status": "error",
+                "message": "حدث خطأ داخلي أثناء معالجة الشكوى. يرجى المحاولة مرة أخرى.",
+            },
         )
 
     # ── Early exit: complaint is unrelated to dentistry ──────────────────────
@@ -705,9 +699,11 @@ async def triage_patient_symptoms(request: SymptomRequest) -> JSONResponse:
     # This guarantees تصنيف_الحالة is the Arabic+English label, never a raw dept code.
     diag_info = _dept_to_diagnosis_info(dept_eng)
 
-    # For Needs_Clarification / Out_of_Domain, override the action with the LLM's
-    # patient-friendly plan (it asks for more details), not the generic Healthy action.
-    is_special = dept_eng in ("Needs_Clarification", "Out_of_Domain")
+    # For Needs_Clarification, override the action with the LLM's patient-
+    # friendly plan (it asks for more details), not the generic Healthy action.
+    # NOTE: "Out_of_Domain" never reaches here — it's caught by the
+    # is_out_of_scope short-circuit above before dept_eng is even read.
+    is_special = dept_eng == "Needs_Clarification"
     action_text = (
         data.get("action_plan", diag_info["action"])
         if is_special
